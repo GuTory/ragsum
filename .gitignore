@@ -6,6 +6,9 @@ __pycache__/
 # datasets
 data/
 
+# Leetcode practice
+leet.ipynb
+
 # C extensions
 *.so
 
