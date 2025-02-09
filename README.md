@@ -44,3 +44,27 @@ Finally, install the dependencies with:
 ```
 pip install -r requirements.txt
 ```
+
+### Ollama Environment
+
+To shoot up locally running LLMs, you need to install [Ollama](https://ollama.com/download)
+
+#### Linux installation
+
+```
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+This command will install ollama to run LLMs locally.
+
+To start an ollama server use the following prompt:
+
+```
+ollama serve
+```
+
+In a new terminal, run your desired model, I'll use deepseek-r1:8b for now
+
+```
+ollama run deepseek-r1:8b
+```
