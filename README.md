@@ -21,6 +21,13 @@ virtualenv -p $(which python3.10) venv
 source venv/bin/activate 
 ```
 
+To install the jupyter kernel and make it visible in VS Code:
+
+```
+pip install ipykernel
+python -m ipykernel install --user --name venv
+```
+
 This way, the virtual environment will be created, and sourced, we are ready to code!
 
 ### Windows
