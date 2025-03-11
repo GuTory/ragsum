@@ -1,11 +1,12 @@
 import os
 import logging
 import uuid
-from pathlib import Path
 import wrds
+import pandas as pd
+from datetime import datetime
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
-import pandas as pd
 from nltk.tokenize import word_tokenize
 
 
@@ -38,14 +39,16 @@ class WhartonScraper:
     def __str__(self):
         return f"WhartonScraper for company ({self._company_search_cache.name})"
 
-    def pipeline(self, company_id: str) -> None:
+    def pipeline(
+        self, company_id: str, start: int = 2020, end: int = datetime.now().year
+    ) -> None:
         """Full Pipeline for transcript acquisition from Wharton database, based on `companyid`
 
         Args:
             company_id (str): `companyid` to filter by
         """
         self.__get_company_by_id(company_id)
-        self.__get_company_transcripts()
+        self.__get_company_transcripts(start, end)
         self.__transcripts_to_csv()
 
     def __get_company_by_id(self, company_id: str) -> Optional[pd.DataFrame]:
@@ -82,7 +85,7 @@ class WhartonScraper:
         logging.info(f"information acquired for company: {company_id}")
         return df
 
-    def __get_company_transcripts(self) -> Optional[pd.DataFrame]:
+    def __get_company_transcripts(self, start: int, end: int) -> Optional[pd.DataFrame]:
         """
         Acquiring company transcripts based on the cached `companyid`
         """
@@ -96,13 +99,14 @@ class WhartonScraper:
         if self.connection is None:
             return None
 
+        logging.info(f"scraping transcripts between {start} and {end}")
         query = f"""
             SELECT a.*, b.*, c.componenttext
             FROM (
                   SELECT * 
                   FROM ciq.wrds_transcript_detail
                   WHERE companyid = {self._company_search_cache.id}
-                    AND date_part('year', mostimportantdateutc) BETWEEN 2023 AND 2025
+                    AND date_part('year', mostimportantdateutc) BETWEEN {start} AND {end}
                  ) AS a
             JOIN ciq.wrds_transcript_person AS b
               ON a.transcriptid = b.transcriptid
