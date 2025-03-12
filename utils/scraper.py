@@ -1,3 +1,6 @@
+'''
+Scraper module for reaching out to Wharton dataset and scraping company transcripts.
+'''
 import logging
 import uuid
 from datetime import datetime
@@ -33,13 +36,13 @@ class WhartonScraper:
         self.connection: wrds.Connection = (
             connection if connection is not None else wrds.Connection()
         )
-        self._company_search_cache: WhartonCompanyIdSearchCache = None
+        self._search_cache: WhartonCompanyIdSearchCache = None
 
     def __repr__(self):
-        return f'WhartonScraper(id={self._company_search_cache.id}, name={self._company_search_cache.name})'
+        return f'WhartonScraper(id={self._search_cache.id}, name={self._search_cache.name})'
 
     def __str__(self):
-        return f'WhartonScraper for company ({self._company_search_cache.name})'
+        return f'WhartonScraper for company ({self._search_cache.name})'
 
     def pipeline(
         self, company_id: str, start: int = 2020, end: int = datetime.now().year
@@ -57,9 +60,9 @@ class WhartonScraper:
         '''
         Reaching out to Wharton database to see if `companyid` is present
         '''
-        if self._company_search_cache and self._company_search_cache.id == company_id:
+        if self._search_cache and self._search_cache.id == company_id:
             logging.debug('using cache on company: %s', company_id)
-            return self._company_search_cache.df
+            return self._search_cache.df
 
         if self.connection is None:
             return None
@@ -73,15 +76,15 @@ class WhartonScraper:
 
         if df.shape[0] == 0:
             logging.debug('no results for company search')
-            self._company_search_cache = None
+            self._search_cache = None
             return None
 
         if df.shape[0] > 1:
             logging.debug('too many results for search: %s', df.shape[0])
-            self._company_search_cache = None
+            self._search_cache = None
             return None
 
-        self._company_search_cache = WhartonCompanyIdSearchCache(
+        self._search_cache = WhartonCompanyIdSearchCache(
             id=company_id, name=df.companyname[0], df=df, transcripts=None
         )
         logging.info('information acquired for company: %s', company_id)
@@ -91,12 +94,12 @@ class WhartonScraper:
         '''
         Acquiring company transcripts based on the cached `companyid`
         '''
-        if not self._company_search_cache:
+        if not self._search_cache:
             logging.debug('no company cache')
             return None
-        if self._company_search_cache.transcripts:
+        if self._search_cache.transcripts:
             logging.debug('transcripts already cached')
-            return self._company_search_cache.transcripts
+            return self._search_cache.transcripts
 
         if self.connection is None:
             return None
@@ -107,7 +110,7 @@ class WhartonScraper:
             FROM (
                   SELECT * 
                   FROM ciq.wrds_transcript_detail
-                  WHERE companyid = {self._company_search_cache.id}
+                  WHERE companyid = {self._search_cache.id}
                     AND date_part('year', mostimportantdateutc) BETWEEN {start} AND {end}
                  ) AS a
             JOIN ciq.wrds_transcript_person AS b
@@ -146,10 +149,10 @@ class WhartonScraper:
             lambda x: len(word_tokenize(str(x)))
         )
 
-        self._company_search_cache.transcripts = transcripts
+        self._search_cache.transcripts = transcripts
         logging.info(
             'transcripts acquired for company: %s with a shape: %s',
-            self._company_search_cache.id,
+            self._search_cache.id,
             transcripts.shape,
         )
         return transcripts
@@ -158,12 +161,12 @@ class WhartonScraper:
         '''
         Writing transcript dataset to file if it is present
         '''
-        if self._company_search_cache.transcripts is None:
+        if self._search_cache.transcripts is None:
             logging.debug('no transcript records.')
             return
 
-        self._company_search_cache.transcripts.to_csv(
-            Path('..') / 'data' / f'{self._company_search_cache.id}.csv',
+        self._search_cache.transcripts.to_csv(
+            Path('..') / 'data' / f'{self._search_cache.id}.csv',
             sep='\t',
             index=False,
             quoting=1,
@@ -173,5 +176,5 @@ class WhartonScraper:
             lineterminator='\n',
         )
         logging.info(
-            'transcripts successfully written to %s.csv', self._company_search_cache.id
+            'transcripts successfully written to %s.csv', self._search_cache.id
         )

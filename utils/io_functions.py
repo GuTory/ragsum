@@ -1,5 +1,5 @@
 '''
-Module for using shell and file system (mostly csv files)
+Module for using shell and file system (mostly csv files).
 '''
 
 import logging
