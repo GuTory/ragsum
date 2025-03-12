@@ -1,11 +1,14 @@
 import logging
-import pandas as pd
 from typing import Optional
 from pathlib import Path
 import subprocess
+import pandas as pd
 
 
 def load_if_scraped(company_id: str) -> Optional[pd.DataFrame]:
+    '''
+    Transcript loader dataset based on company_id, if nothing found, returns None
+    '''
     file_path = Path('..') / 'data' / f'{company_id}.csv'
     if file_path.exists():
         df = pd.read_csv(
@@ -18,22 +21,30 @@ def load_if_scraped(company_id: str) -> Optional[pd.DataFrame]:
         )
         logging.info('successfully loaded local transcripts')
         return df
-    else:
-        logging.debug('no local transcripts found')
+    
+    logging.debug('no local transcripts found')
     return None
 
 def run(args: str) -> subprocess.CompletedProcess:
+    '''
+    Running a subprocess in shell with args parameter (gets split)
+    '''
     return subprocess.run(
         args.split(),
-        stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE, 
-        text=True
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True
     )
 
 def popen(args) -> subprocess.Popen:
+    '''
+    Running a subprocess in shell with args parameter (gets split),
+    interactive process gets returned, that needs to be terminated.
+    '''
     return subprocess.Popen(
         args.split(),
-        stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE, 
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True
     )
