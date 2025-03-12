@@ -1,3 +1,7 @@
+'''
+Module for using shell and file system (mostly csv files)
+'''
+
 import logging
 from typing import Optional
 from pathlib import Path
@@ -21,7 +25,6 @@ def load_if_scraped(company_id: str) -> Optional[pd.DataFrame]:
         )
         logging.info('successfully loaded local transcripts')
         return df
-    
     logging.debug('no local transcripts found')
     return None
 
