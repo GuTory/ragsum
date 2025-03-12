@@ -1,17 +1,19 @@
-import os
 import logging
 import uuid
-import wrds
-import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 from nltk.tokenize import word_tokenize
+import wrds
+import pandas as pd
 
 
 @dataclass
 class WhartonCompanyIdSearchCache:
+    '''
+    Data holder class for scraping
+    '''
     id: int
     name: str
     df: pd.DataFrame
@@ -70,7 +72,7 @@ class WhartonScraper:
         df: pd.DataFrame = self.connection.raw_sql(select_company)
 
         if df.shape[0] == 0:
-            logging.debug(f"no results for company search")
+            logging.debug("no results for company search")
             self._company_search_cache = None
             return None
 
@@ -82,7 +84,7 @@ class WhartonScraper:
         self._company_search_cache = WhartonCompanyIdSearchCache(
             id=company_id, name=df.companyname[0], df=df, transcripts=None
         )
-        logging.info(f"information acquired for company: {company_id}")
+        logging.info("information acquired for company: %s", company_id)
         return df
 
     def __get_company_transcripts(self, start: int, end: int) -> Optional[pd.DataFrame]:
