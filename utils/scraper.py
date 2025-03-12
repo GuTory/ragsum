@@ -130,7 +130,7 @@ class WhartonScraper:
             )
             .apply(
                 lambda group: '\n'.join(
-                    f'{row['speakertypename']}: {row['componenttext']}'
+                    f'{row.speakertypename}: {row.componenttext}'
                     for _, row in group.iterrows()
                 ),
                 include_groups=False,
