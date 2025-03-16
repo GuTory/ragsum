@@ -53,6 +53,9 @@ def popen(args) -> subprocess.Popen:
     )
 
 def get_ollama_version():
+    '''
+    Function to call for Ollama version (for the sake of documentation).
+    '''
     try:
         result = run('ollama --version')
         return result.stdout.strip()
