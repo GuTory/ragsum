@@ -16,6 +16,7 @@ class DeepSeekResponse:
     '''
     DeepSeek response data holder: thinking and final response string
     '''
+
     thinking: str
     response: str
 
@@ -45,23 +46,22 @@ class DeepSeekAPI:
             f'stream={self.stream}, timeout={self.timeout}, max_retries={self.max_retries})'
         )
 
-    @classmethod
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10),
         retry=retry_if_exception_type((aiohttp.ClientError, asyncio.TimeoutError)),
-        reraise=True
+        reraise=True,
     )
     async def generate(self, prompt: str) -> str:
         '''
         Asynchronous function that calls the locally running model through HTTP.
-        
+
         Args:
             prompt: The input prompt to send to the model
-            
+
         Returns:
             Generated text response from the model
-            
+
         Raises:
             aiohttp.ClientError: For HTTP request failures
             ValueError: For JSON decoding issues
@@ -69,12 +69,8 @@ class DeepSeekAPI:
         '''
         try:
             async with aiohttp.ClientSession() as session:
-                request_data = {
-                    'model': self.model_name, 
-                    'prompt': prompt, 
-                    'stream': self.stream
-                }
-                logging.debug(f'Sending request to {self.url} with model {self.model}')
+                request_data = {'model': self.model_name, 'prompt': prompt, 'stream': self.stream}
+                logging.debug('Sending request to %s with model %s', self.url, self.model_name)
                 return await self._handle_non_streaming(session, request_data)
 
         except aiohttp.ClientError as e:
@@ -86,7 +82,6 @@ class DeepSeekAPI:
             logging.error(error_message)
             raise
 
-    @classmethod
     def process_text(self, response: str):
         '''
         Extracts the thinking phase between <think> tags and the final response after </think>.
@@ -100,39 +95,18 @@ class DeepSeekAPI:
             logging.error('no match in thinking regex')
             self.response = None
 
-    @classmethod
     async def _handle_non_streaming(
-        self,
-        session: aiohttp.ClientSession,
-        request_data: Dict[str, Any]
+        self, session: aiohttp.ClientSession, request_data: Dict[str, Any]
     ) -> str:
         '''Handle non-streaming response format.'''
-        async with session.post(
-            self.url,
-            json=request_data,
-            timeout=self.timeout
-        ) as response:
+        async with session.post(self.url, json=request_data, timeout=self.timeout) as response:
             response.raise_for_status()
             data = await response.json()
 
         if 'response' in data:
-            logging.info(f'Response received from model {self.model_name}')
-            self.response = DeepSeekResponse(data)
-            self.response.process_text(data['response'])
+            logging.info('Response received from model %s', self.model_name)
+            self.process_text(data['response'])
             return self.response.response
 
-        error_msg = f'No response field in API response: {data}'
-        logging.warning(error_msg)
-        return error_msg
-
-    @classmethod
-    async def cancel(self) -> None:
-        '''Cancel any ongoing requests.'''
-        # Implementation would depend on the specific requirements
-        logging.info('Request cancellation attempted')
-
-    @classmethod
-    async def create(cls, **kwargs) -> 'DeepSeekAPI':
-        '''Factory method to create an instance asynchronously.'''
-        instance = cls(**kwargs)
-        return instance
+        logging.warning('No response field in API response: %s', data)
+        return None
