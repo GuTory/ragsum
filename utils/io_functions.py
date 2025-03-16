@@ -3,10 +3,13 @@ Module for using shell and file system (mostly csv files).
 '''
 
 import logging
+import os
 from typing import Optional
 from pathlib import Path
 import subprocess
 import pandas as pd
+import zipfile
+
 
 
 def load_if_scraped(company_id: str) -> Optional[pd.DataFrame]:
@@ -61,3 +64,36 @@ def get_ollama_version():
         return result.stdout.strip()
     except subprocess.CalledProcessError:
         return 'Error while checking Ollama version.'
+
+def zip_directory(directory_path, zip_filename):
+    '''
+    Zipping a directory with Linux-style paths, but the zip file should be compatible with Windows 
+    (i.e., line endings in text files should be Windows-style \r\n).
+    '''
+    def sanitize_filename(filename):
+        invalid_chars = '<>:"/\\|?*'
+        for char in invalid_chars:
+            filename = filename.replace(char, '_')
+        return filename
+
+    directory_path = Path(directory_path)
+    
+    with zipfile.ZipFile(zip_filename, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for file_path in directory_path.rglob('*'):
+            if file_path.is_file():
+                sanitized_file = sanitize_filename(file_path.name)
+                relpath = file_path.relative_to(directory_path).as_posix()
+                with open(file_path, 'rb') as f:
+                    file_data = f.read()
+                if b'\n' in file_data:
+                    file_data = file_data.replace(b'\n', b'\r\n')
+                zipf.writestr(relpath, file_data)
+
+# if __name__ == "__main__":
+#     # Define the directory and zip filename
+#     directory_to_zip = "../data"
+#     zip_file_name = "../data/data.zip"
+#     
+#     # Call the function to zip the directory
+#     zip_directory(directory_to_zip, zip_file_name)
+#     print(f"Directory '{directory_to_zip}' has been zipped into '{zip_file_name}'")
