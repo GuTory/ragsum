@@ -51,3 +51,10 @@ def popen(args) -> subprocess.Popen:
         stderr=subprocess.PIPE,
         text=True
     )
+
+def get_ollama_version():
+    try:
+        result = run('ollama --version')
+        return result.stdout.strip()
+    except subprocess.CalledProcessError:
+        return 'Error while checking Ollama version.'
