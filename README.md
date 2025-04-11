@@ -63,3 +63,11 @@ To start an ollama server use the following prompt:
 ollama serve
 ollama run deepseek-r1:8b
 ```
+
+#### Run Pre-commit
+
+```
+pre-commit run nbqa-black
+pre-commit run nbqa-pyupgrade
+pre-commit run nbqa-isort
+```
