@@ -1,3 +1,5 @@
+'''Generic logger setup function that can be used across the database.'''
+
 import logging
 from logging.handlers import RotatingFileHandler
 
@@ -35,8 +37,8 @@ def setup_logger(
 
 
 if __name__ == '__main__':
-    logger = setup_logger(__name__)
+    test_logger = setup_logger(__name__)
 
-    logger.info("App started")
-    logger.warning("Something might be off")
-    logger.error("Oops, an error!")
+    test_logger.info("App started")
+    test_logger.warning("Something might be off")
+    test_logger.error("Oops, an error!")
