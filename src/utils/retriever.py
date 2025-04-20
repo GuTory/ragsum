@@ -7,19 +7,23 @@ import faiss
 import pandas as pd
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
-from logger import setup_logger
+from utils import setup_logger
 
 logger = setup_logger(__name__)
 
 SearchResults: TypeAlias = tuple[list[str], list[float]]
 
+
 @dataclass
 class Retriever:
     '''Retriever class for RAG systems.'''
+
     knowledge: List[str]
     top_k: int = 3
     type: str = 'float32'
-    model: SentenceTransformer = field(default_factory=lambda: SentenceTransformer('all-MiniLM-L6-v2'))
+    model: SentenceTransformer = field(
+        default_factory=lambda: SentenceTransformer('all-MiniLM-L6-v2')
+    )
     embeddings: np.ndarray = field(init=False)
     index: faiss.IndexFlatL2 = field(init=False)
     distances: np.ndarray = field(init=False)
@@ -29,14 +33,17 @@ class Retriever:
         if self.top_k <= 0:
             raise ValueError('Give a positive top k parameter.')
 
-        self.embeddings = np.array([
-            self.model.encode([text])[0] for text in tqdm(self.knowledge, desc="Encoding", unit="doc")
-        ]).astype(self.type)
+        self.embeddings = np.array(
+            [
+                self.model.encode([text])[0]
+                for text in tqdm(self.knowledge, desc="Encoding", unit="doc")
+            ]
+        ).astype(self.type)
 
         self.index = faiss.IndexFlatL2(self.embeddings.shape[1])
         with tqdm(total=self.embeddings.shape[0], desc="Indexing", unit="vec") as pbar:
             for i in range(0, self.embeddings.shape[0], 1000):
-                batch = self.embeddings[i:i+1000]
+                batch = self.embeddings[i : i + 1000]
                 self.index.add(batch)
                 pbar.update(batch.shape[0])
 

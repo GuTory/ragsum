@@ -1,6 +1,6 @@
-"""
+'''
 Using SummarizationPipeline to fine-tune PEGASUS on billsum dataset
-"""
+'''
 
 from utils import SummarizationPipeline
 from datasets import load_dataset
@@ -8,7 +8,7 @@ from datasets import load_dataset
 from transformers import Seq2SeqTrainingArguments
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     checkpoint = 'google/pegasus-xsum'
 
     # Initialize the pipeline with the PEGASUS model
@@ -16,18 +16,18 @@ if __name__ == "__main__":
     pipeline = SummarizationPipeline(model_name_or_path=checkpoint, in_8bit=False)
 
     # Load the billsum dataset
-    billsum = load_dataset("FiscalNote/billsum")
+    billsum = load_dataset('FiscalNote/billsum')
 
-    tokenized = pipeline.tokenize_dataset(billsum["train"])
-    tokenized_eval = pipeline.tokenize_dataset(billsum["test"])
+    tokenized = pipeline.tokenize_dataset(billsum['train'])
+    tokenized_eval = pipeline.tokenize_dataset(billsum['test'])
 
     # Update save path to reflect the PEGASUS model
-    save_path = f"../models/ragsum-{checkpoint}-billsum"
+    save_path = f'../models/ragsum-{checkpoint}-billsum'
 
     # Training arguments - similar to before but with PEGASUS-optimized settings
     training_args = Seq2SeqTrainingArguments(
         output_dir=save_path,
-        eval_strategy="epoch",
+        eval_strategy='epoch',
         per_device_train_batch_size=4,
         per_device_eval_batch_size=4,
         weight_decay=0.01,
@@ -47,9 +47,9 @@ if __name__ == "__main__":
     pipeline.save_model(save_path)
 
     sample_text = [
-        "Deep Learning models have achieved state-of-the-art performance across various NLP benchmarks. However, summarizing long documents remains a challenge due to limited context windows and dependencies on fine-grained linguistic information."
+        'Deep Learning models have achieved state-of-the-art performance across various NLP benchmarks. However, summarizing long documents remains a challenge due to limited context windows and dependencies on fine-grained linguistic information.'
     ]
 
     # For PEGASUS, specify generation parameters optimized for this model
     summary = pipeline.summarize(sample_text, max_new_tokens=60, num_beams=8, length_penalty=0.8)
-    print(f"{checkpoint} fine-tuned summary:", summary[0])
+    print(f'{checkpoint} fine-tuned summary:', summary[0])
