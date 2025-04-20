@@ -3,16 +3,23 @@ Using SummarizationPipeline to fine-tune
 human-centered-summarization/financial-summarization-pegasus
 '''
 
-from utils import SummarizationPipeline
 from datasets import load_dataset
-
+import torch
 from transformers import Seq2SeqTrainingArguments
+
+from utils import SummarizationPipeline, ModelConfig, LoggingConfig
 
 
 if __name__ == '__main__':
     checkpoint = 'human-centered-summarization/financial-summarization-pegasus'
 
-    pipeline = SummarizationPipeline(model_name_or_path=checkpoint, in_8bit=False)
+    model_config: ModelConfig = ModelConfig(
+        model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'
+    )
+
+    logging_config: LoggingConfig = LoggingConfig()
+
+    pipeline = SummarizationPipeline(model_config=model_config, logging_config=logging_config)
 
     billsum = load_dataset('FiscalNote/billsum')
     tokenized = pipeline.tokenize_dataset(billsum['train'])
@@ -39,7 +46,11 @@ if __name__ == '__main__':
     pipeline.save_model(save_path)
 
     sample_text = [
-        'Deep Learning models have achieved state-of-the-art performance across various NLP benchmarks. However, summarizing long documents remains a challenge due to limited context windows and dependencies on fine-grained linguistic information.'
+        'Deep Learning models have achieved state-of-the-art performance '
+        'across various NLP benchmarks. '
+        'However, summarizing long documents remains a challenge due to '
+        'limited context windows and dependencies on '
+        'fine-grained linguistic information.'
     ]
 
     summary = pipeline.summarize(sample_text, max_new_tokens=60)
