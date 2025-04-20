@@ -88,7 +88,6 @@ trainer = Seq2SeqTrainer(
     args=seq2seq_args,
     train_dataset=tokenized_billsum['train'],
     eval_dataset=tokenized_billsum['test'],
-    processing_class=tokenizer,
     data_collator=data_collator,
     compute_metrics=compute_metrics
 )
