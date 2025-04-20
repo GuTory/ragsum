@@ -7,12 +7,12 @@ import evaluate
 import pandas as pd
 
 from transformers import (
-    AutoTokenizer, 
-    AutoModelForSeq2SeqLM, 
-    AutoConfig, 
-    Seq2SeqTrainer, 
-    Seq2SeqTrainingArguments, 
-    DataCollatorForSeq2Seq
+    AutoTokenizer,
+    AutoModelForSeq2SeqLM,
+    AutoConfig,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
+    DataCollatorForSeq2Seq,
 )
 
 from datasets import load_dataset
@@ -22,7 +22,7 @@ from utils import setup_logger
 logger = setup_logger(__name__)
 logger.info('Logging Successfully set up')
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-rouge = evaluate.load("rouge")
+rouge = evaluate.load('rouge')
 
 # Load model and tokenizer
 checkpoint = 'facebook/bart-large-cnn'
@@ -33,21 +33,24 @@ tokenizer = AutoTokenizer.from_pretrained(
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
 
 # Load dataset
-billsum = load_dataset("FiscalNote/billsum")
+billsum = load_dataset('FiscalNote/billsum')
 
 # Preprocess data
-prefix = "summarize: "
+prefix = 'summarize: '
+
 
 def preprocess_function(examples):
-    inputs = [prefix + doc for doc in examples["text"]]
+    inputs = [prefix + doc for doc in examples['text']]
     model_inputs = tokenizer(inputs, max_length=1024, truncation=True)
 
-    labels = tokenizer(text_target=examples["summary"], max_length=128, truncation=True)
+    labels = tokenizer(text_target=examples['summary'], max_length=128, truncation=True)
 
-    model_inputs["labels"] = labels["input_ids"]
+    model_inputs['labels'] = labels['input_ids']
     return model_inputs
 
+
 tokenized_billsum = billsum.map(preprocess_function, batched=True)
+
 
 # Define metrics computation
 def compute_metrics(eval_pred):
@@ -59,14 +62,15 @@ def compute_metrics(eval_pred):
     result = rouge.compute(predictions=decoded_preds, references=decoded_labels, use_stemmer=True)
 
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in predictions]
-    result["gen_len"] = np.mean(prediction_lens)
+    result['gen_len'] = np.mean(prediction_lens)
 
     return {k: round(v, 4) for k, v in result.items()}
 
+
 # Training configuration
 seq2seq_args = Seq2SeqTrainingArguments(
-    output_dir=f"../models/ragsum-{checkpoint}-billsum",
-    eval_strategy="epoch",
+    output_dir=f'../models/ragsum-{checkpoint}-billsum',
+    eval_strategy='epoch',
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
     weight_decay=0.01,
@@ -89,41 +93,43 @@ trainer = Seq2SeqTrainer(
     train_dataset=tokenized_billsum['train'],
     eval_dataset=tokenized_billsum['test'],
     data_collator=data_collator,
-    compute_metrics=compute_metrics
+    compute_metrics=compute_metrics,
 )
 
 # Train model
 trainer.train()
 
 # Save model
-save_path = f"../models/ragsum-{checkpoint}-billsum"
+save_path = f'../models/ragsum-{checkpoint}-billsum'
 os.makedirs(save_path, exist_ok=True)
 trainer.save_model(save_path)
 tokenizer.save_pretrained(save_path)
+
 
 # Test model with sample text
 def test_model():
     # Load saved model
     model = AutoModelForSeq2SeqLM.from_pretrained(save_path)
     tokenizer = AutoTokenizer.from_pretrained(save_path)
-    
-    test_text = """
+
+    test_text = '''
     summarize: The United States Congress has approved a sweeping infrastructure bill, marking one of the most significant legislative efforts in recent years. The bill, which totals $1.2 trillion in funding, aims to revamp aging infrastructure nationwide. Key areas of investment include transportation — such as roads, railways, and bridges — clean energy initiatives, and expanded broadband internet access. The legislation received bipartisan support in both the House and Senate, signaling rare political cooperation in an otherwise divided climate. Proponents argue that this investment will create jobs, stimulate the economy, and lay the groundwork for long-term national competitiveness.
-    """
-    
-    inputs = tokenizer(test_text, return_tensors="pt").input_ids
+    '''
+
+    inputs = tokenizer(test_text, return_tensors='pt').input_ids
     outputs = model.generate(inputs, max_new_tokens=100, do_sample=False)
     summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
-    reference_summary = """
+
+    reference_summary = '''
     Congress passed a new bill aimed at improving infrastructure across the U.S., allocating $1.2 trillion in funding over the next ten years. The legislation focuses on roads, bridges, clean energy, and broadband access, with bipartisan support marking a significant political achievement.
-    """
-    
+    '''
+
     results = rouge.compute(predictions=[summary], references=[reference_summary], use_stemmer=True)
     results = {k: round(v, 4) for k, v in results.items()}
-    
-    print("Generated summary:", summary)
-    print("ROUGE scores:", results)
 
-if __name__ == "__main__":
+    print('Generated summary:', summary)
+    print('ROUGE scores:', results)
+
+
+if __name__ == '__main__':
     test_model()

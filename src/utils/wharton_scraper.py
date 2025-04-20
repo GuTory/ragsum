@@ -1,6 +1,7 @@
 '''
 Scraper module for reaching out to Wharton dataset and scraping company transcripts.
 '''
+
 import logging
 import uuid
 from datetime import datetime
@@ -17,6 +18,7 @@ class WhartonCompanyIdSearchCache:
     '''
     Data holder class for scraping
     '''
+
     id: int
     name: str
     df: pd.DataFrame
@@ -44,9 +46,7 @@ class WhartonScraper:
     def __str__(self):
         return f'WhartonScraper for company ({self._search_cache.name})'
 
-    def pipeline(
-        self, company_id: str, start: int = 2020, end: int = datetime.now().year
-    ) -> None:
+    def pipeline(self, company_id: str, start: int = 2020, end: int = datetime.now().year) -> None:
         '''Full Pipeline for transcript acquisition from Wharton database, based on `companyid`
 
         Args:
@@ -133,8 +133,7 @@ class WhartonScraper:
             )
             .apply(
                 lambda group: '\n'.join(
-                    f'{row.speakertypename}: {row.componenttext}'
-                    for _, row in group.iterrows()
+                    f'{row.speakertypename}: {row.componenttext}' for _, row in group.iterrows()
                 ),
                 include_groups=False,
             )
@@ -142,9 +141,7 @@ class WhartonScraper:
         )
         transcripts.companyid = transcripts.companyid.astype(int)
         transcripts['uuid'] = uuid.uuid4()
-        transcripts['word_count'] = transcripts['full_text'].apply(
-            lambda x: len(str(x).split())
-        )
+        transcripts['word_count'] = transcripts['full_text'].apply(lambda x: len(str(x).split()))
         transcripts['word_count_nltk'] = transcripts['full_text'].apply(
             lambda x: len(word_tokenize(str(x)))
         )
@@ -175,6 +172,4 @@ class WhartonScraper:
             quotechar='"',
             lineterminator='\n',
         )
-        logging.info(
-            'transcripts successfully written to %s.csv', self._search_cache.id
-        )
+        logging.info('transcripts successfully written to %s.csv', self._search_cache.id)
