@@ -81,9 +81,9 @@ if __name__ == '__main__':
 
     retriever = Retriever(df.combined.tolist(), 5)
 
-    top_k, lowest_distances = retriever.search(
+    top_results, lowest_distances = retriever.search(
         'What is the meaning of arbitrage in general? and tell me about acquisitions', top_k=5
     )
 
-    for k, dist in zip(top_k, lowest_distances):
+    for k, dist in zip(top_results, lowest_distances):
         print(f'distance: [{dist:.4f}]: {k}')

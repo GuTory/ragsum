@@ -431,7 +431,7 @@ confidence=HIGH,
 # --disable=W".
 
 # Disabling duplicate codes
-# 
+# R0401 is for disabling possible cyclic imports
 disable=R0401,
         duplicate-code,
         raw-checker-failed,
