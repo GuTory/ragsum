@@ -2,6 +2,14 @@
 
 This is the codebase to my Master's thesis at Maastricht University.
 
+
+
+## Run code in the background
+
+```shell
+nohup python my_script.py > my_script.log 2>&1 &
+```
+
 ## Python Environment
 
 ### Linux

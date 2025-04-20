@@ -1,7 +1,16 @@
+# thesis document
+*.docx
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# models
+models
+
+#logs
+*.log
 
 # datasets
 data/
