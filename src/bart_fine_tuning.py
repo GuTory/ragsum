@@ -28,7 +28,6 @@ rouge = evaluate.load("rouge")
 checkpoint = 'facebook/bart-large-cnn'
 tokenizer = AutoTokenizer.from_pretrained(
     checkpoint,
-    load_in_8bit=True,
     device_map='auto',
 )
 model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
