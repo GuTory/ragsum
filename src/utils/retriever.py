@@ -1,8 +1,8 @@
 '''Retriever class for RAG capabilities.'''
 
-import numpy as np
 from typing import List, TypeAlias
 from dataclasses import dataclass, field
+import numpy as np
 import faiss
 import pandas as pd
 from tqdm import tqdm
@@ -52,10 +52,10 @@ class Retriever:
 
     def search(self, query: str, top_k: int = None) -> SearchResults:
         '''Search the query in the index by similarity'''
-        if not top_k:
-            top_k = self.top_k
+        if top_k:
+            self.top_k = top_k
         query_embedding = self.model.encode([query]).astype(self.type)
-        distances, indices = self.index.search(query_embedding, top_k)
+        distances, indices = self.index.search(query_embedding, self.top_k)
         self.distances = distances[0]
         self.indices = indices[0]
 
@@ -81,9 +81,9 @@ if __name__ == '__main__':
 
     retriever = Retriever(df.combined.tolist(), 5)
 
-    top_k, distances = retriever.search(
+    top_k, lowest_distances = retriever.search(
         'What is the meaning of arbitrage in general? and tell me about acquisitions', top_k=5
     )
 
-    for k, dist in zip(top_k, distances):
+    for k, dist in zip(top_k, lowest_distances):
         print(f'distance: [{dist:.4f}]: {k}')
