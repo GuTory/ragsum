@@ -31,6 +31,7 @@ class TopicModeler:
     speed: str = 'learn'
     workers: int = 4
     model: Top2Vec = field(init=False)
+    processed_texts: List[str] = field(init=False)
     hierarchy: Optional[List[int]] = field(default=None, init=False)
 
     def __post_init__(self):
