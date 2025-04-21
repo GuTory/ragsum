@@ -12,6 +12,7 @@ from utils import setup_logger
 
 logger = setup_logger(__name__)
 
+
 @dataclass
 class TopicModeler:
     '''
@@ -25,6 +26,7 @@ class TopicModeler:
         speed: Top2Vec training speed ('learn', 'deep-learn', 'fast-learn').
         workers: Number of threads to use for training.
     '''
+
     texts: List[str]
     chunk_size: int = 512
     chunk_overlap: int = 64
@@ -48,16 +50,28 @@ class TopicModeler:
         '''
         Splits input texts into smaller overlapping chunks using LangChain's text splitter.
         '''
-        logger.info('Chunking input documents with size %d and overlap %d', self.chunk_size, self.chunk_overlap)
-        docs = [Document(page_content=text) for text in tqdm(self.texts, desc='Preparing documents')]
+        logger.info(
+            'Chunking input documents with size %d and overlap %d',
+            self.chunk_size,
+            self.chunk_overlap,
+        )
+        docs = [
+            Document(page_content=text) for text in tqdm(self.texts, desc='Preparing documents')
+        ]
         splitter = RecursiveCharacterTextSplitter(
             separators=['\n', '\n\n', '  \n'],
             chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap
+            chunk_overlap=self.chunk_overlap,
         )
         chunks = splitter.split_documents(docs)
-        self.processed_texts = [chunk.page_content for chunk in tqdm(chunks, desc='Splitting documents')]
-        logger.info('Generated %d total chunks from %d original texts', len(self.processed_texts), len(self.texts))
+        self.processed_texts = [
+            chunk.page_content for chunk in tqdm(chunks, desc='Splitting documents')
+        ]
+        logger.info(
+            'Generated %d total chunks from %d original texts',
+            len(self.processed_texts),
+            len(self.texts),
+        )
 
     def _train_model(self):
         '''
@@ -65,18 +79,24 @@ class TopicModeler:
         '''
         self.model = Top2Vec(self.processed_texts, speed=self.speed, workers=self.workers)
 
-    def print_topics(self, num_topics: int = None):
-        '''
-        Prints the top keywords from the discovered topics.
+    def get_topics(self, num_topics: int = None) -> List[dict]:
+        """
+        Returns the top keywords from the discovered topics.
 
         Args:
-            num_topics: Number of top topics to display. If None, displays all.
-        '''
+            num_topics: Number of top topics to return. If None, returns all topics.
+
+        Returns:
+            A list of dictionaries, each containing a topic number and its keywords.
+        """
         topic_count = self.model.get_num_topics() if num_topics is None else num_topics
         topic_words, _, topic_nums = self.model.get_topics(topic_count)
-        for i, words in enumerate(topic_words):
-            print(f'\nTopic #{topic_nums[i]}:')
-            print(', '.join(words))
+        topics = []
+
+        for topic_num, words in zip(topic_nums, topic_words):
+            topics.append({"topic_id": topic_num, "keywords": words})
+
+        return topics
 
     def show_wordcloud(self, topic_id: int = 0):
         '''
@@ -89,13 +109,29 @@ class TopicModeler:
 
     def reduce_topics(self, num_topics: int = 1):
         '''
-        Reduces the number of topics using hierarchical topic reduction.
+        Reduces the number of topics using hierarchical topic reduction and returns the reduced topics' keywords.
 
         Args:
             num_topics: The number of final reduced topics.
+
+        Returns:
+            A list of dictionaries containing the reduced topics and their keywords.
         '''
         logger.info('Reducing topics to %d using hierarchical topic reduction...', num_topics)
         self.model.hierarchical_topic_reduction(num_topics=num_topics)
         self.hierarchy = self.model.get_topic_hierarchy()
-        for original_topic, reduced_topic in enumerate(self.hierarchy):
-            print(f'Original Topic {original_topic} → Reduced Topic {reduced_topic}')
+
+        reduced_topics = []
+        for reduced_topic in range(num_topics):
+            original_topics = [i for i, x in enumerate(self.hierarchy) if x == reduced_topic]
+            topic_keywords = []
+
+            for original_topic in original_topics:
+                topic_words, _, _ = self.model.get_topics(1, topic_num=original_topic)
+                topic_keywords.extend(topic_words[0])
+
+            topic_keywords = list(set(topic_keywords))
+
+            reduced_topics.append({"reduced_topic_id": reduced_topic, "keywords": topic_keywords})
+
+        return reduced_topics
