@@ -148,7 +148,7 @@ class SummarizationPipeline:
             'Model and tokenizer loaded successfully. Model max length: %s', self.model_max_length
         )
         self.logger.info('Using prefix: %s', self.prefix)
-        
+
         model_vocab_size = self.model.config.vocab_size
         tokenizer_vocab_size = len(self.tokenizer)
 
@@ -307,6 +307,8 @@ class SummarizationPipeline:
         '''Compute ROUGE metrics for evaluation'''
         self.logger.debug('Computing metrics...')
         preds, labels = eval_pred
+
+        logger.debug(f"preds shape: {preds.shape}, max token id in preds: {preds.max()}")
 
         decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
