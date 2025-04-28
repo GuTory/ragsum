@@ -148,6 +148,17 @@ class SummarizationPipeline:
             'Model and tokenizer loaded successfully. Model max length: %s', self.model_max_length
         )
         self.logger.info('Using prefix: %s', self.prefix)
+        
+        model_vocab_size = self.model.config.vocab_size
+        tokenizer_vocab_size = len(self.tokenizer)
+
+        if model_vocab_size != tokenizer_vocab_size:
+            self.logger.warning(
+                f"Model vocab size ({model_vocab_size}) and tokenizer vocab size ({tokenizer_vocab_size}) mismatch. Resizing model embeddings."
+            )
+            self.model.resize_token_embeddings(tokenizer_vocab_size)
+        else:
+            self.logger.info("Model and tokenizer vocab sizes match. No resizing needed.")
 
     def set_device(self, device: Union[str, torch.device]):
         '''Setting device as hardware parameter.'''
