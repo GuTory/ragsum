@@ -1,5 +1,5 @@
 '''
-Using SummarizationPipeline to fine-tune BART
+Using SummarizationPipeline to fine-tune T5
 '''
 
 from datasets import load_dataset
@@ -10,7 +10,7 @@ from utils import SummarizationPipeline, ModelConfig, LoggingConfig
 
 
 if __name__ == '__main__':
-    checkpoint = 'google-t5/t5-base'
+    checkpoint = 'google-t5/t5-large'
 
     model_config: ModelConfig = ModelConfig(
         model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'
@@ -32,7 +32,7 @@ if __name__ == '__main__':
         per_device_eval_batch_size=4,
         weight_decay=0.01,
         save_total_limit=3,
-        num_train_epochs=1,
+        num_train_epochs=8,
         predict_with_generate=True,
         warmup_steps=100,
         max_steps=50,

@@ -1,5 +1,5 @@
 '''
-Using SummarizationPipeline to fine-tune PEGASUS on billsum dataset
+Using SummarizationPipeline to fine-tune PEGASUS-X on billsum dataset
 '''
 
 from datasets import load_dataset
@@ -10,7 +10,7 @@ from utils import SummarizationPipeline, ModelConfig, LoggingConfig
 
 
 if __name__ == '__main__':
-    checkpoint = 'google/pegasus-xsum'
+    checkpoint = 'google/pegasus-x-large'
 
     model_config: ModelConfig = ModelConfig(
         model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'

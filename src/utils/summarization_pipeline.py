@@ -145,7 +145,7 @@ class SummarizationPipeline:
 
         self.model_max_length = self.tokenizer.model_max_length
         self.logger.info(
-            'Model and tokenizer loaded successfully. Model max length: %d', self.model_max_length
+            'Model and tokenizer loaded successfully. Model max length: %s', self.model_max_length
         )
         self.logger.info('Using prefix: %s', self.prefix)
 
@@ -164,7 +164,7 @@ class SummarizationPipeline:
     ):
         '''Pre-process (tokenize) dataset for fine-tuning.'''
         if not max_source_length:
-            max_source_length = self.model_max_length
+            max_source_length = min(self.model_max_length, 4096)
 
         self.logger.debug(
             'Preprocessing %d texts (max_source_length=%d, max_target_length=%d)',
@@ -262,7 +262,7 @@ class SummarizationPipeline:
             inputs = self.tokenizer(
                 inputs_text,
                 return_tensors='pt',
-                padding=True,
+                padding='max_length',
                 truncation=True,
                 max_length=min(self.model_max_length, 1024),
             ).to(self.device)
@@ -282,7 +282,7 @@ class SummarizationPipeline:
             outputs = self.model.generate(**inputs, max_length=max_new_tokens, **generation_params)
         else:
             inputs = self.tokenizer(
-                inputs_text, return_tensors='pt', padding=True, truncation=True
+                inputs_text, return_tensors='pt', padding='max_length', truncation=True
             ).to(self.device)
             outputs = self.model.generate(
                 **inputs, max_new_tokens=max_new_tokens, **generate_kwargs
