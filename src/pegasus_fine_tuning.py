@@ -22,8 +22,8 @@ if __name__ == '__main__':
 
     billsum = load_dataset('FiscalNote/billsum')
 
-    tokenized = pipeline.tokenize_dataset(billsum['train'])
-    tokenized_eval = pipeline.tokenize_dataset(billsum['test'])
+    tokenized = pipeline.tokenize_dataset(billsum['train'].select(range(200)))
+    tokenized_eval = pipeline.tokenize_dataset(billsum['test'].select(range(200)))
 
     save_path = f'../models/ragsum-{checkpoint}-billsum'
 

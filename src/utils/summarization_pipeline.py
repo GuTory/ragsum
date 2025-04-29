@@ -88,10 +88,11 @@ class SummarizationPipeline:
     logger: logging.Logger = field(init=False)
     tokenizer: Optional[object] = field(init=False, default=None)
     model: Optional[object] = field(init=False, default=None)
-    model_max_length: Optional[int] = field(init=False, default=None)
+    model_max_length: Optional[int] = field(default=1024)
     trainer: Optional[object] = field(init=False, default=None)
     prefix: str = field(init=False)
     device: Union[str, torch.device] = field(init=False)
+    remote: bool = field(default=True)
 
     def __post_init__(self):
         self.logger = setup_logger(
@@ -113,7 +114,8 @@ class SummarizationPipeline:
             else ('' if self.model_config.is_pegasus else 'summarize: ')
         )
 
-        self._load_model_and_tokenizer()
+        if self.remote:
+            self._load_model_and_tokenizer()
 
     def _load_model_and_tokenizer(self):
         '''Load the appropriate model and tokenizer based on model type.'''
@@ -260,55 +262,65 @@ class SummarizationPipeline:
         self.logger.info('Training complete.')
 
     def summarize(
-        self, texts: List[str], max_new_tokens: int = 100, min_length: int = 10, **generate_kwargs
-    ) -> List[str]:
-        '''Generate summaries using the model'''
+        self,
+        text: str,
+        max_new_tokens: int = 100,
+        min_length: int = 50,
+        **generate_kwargs
+    ) -> str:
+        '''Generate a summary for a single text using the model'''
         self.logger.info(
-            'Generating summaries for %s texts (max_new_tokens= %s)', len(texts), max_new_tokens
+            'Generating summary (max_new_tokens=%s)', max_new_tokens
         )
-
-        inputs_text = [self.prefix + t for t in texts] if self.prefix else texts
-
+    
+        input_text = self.prefix + text if self.prefix else text
+    
         if self.model_config.is_pegasus:
             inputs = self.tokenizer(
-                inputs_text,
+                input_text,
                 return_tensors='pt',
                 padding='max_length',
                 truncation=True,
                 max_length=min(self.model_max_length, 1024),
             ).to(self.device)
-
-            # Default generation parameters optimized for PEGASUS
+    
             pegasus_params = {
                 'num_beams': 8,
-                'length_penalty': 0.8,
+                'length_penalty': 1,
                 'no_repeat_ngram_size': 3,
                 'early_stopping': True,
                 'min_length': min_length,
             }
-
-            # Override with any user-provided parameters
+    
             generation_params = {**pegasus_params, **generate_kwargs}
-
-            outputs = self.model.generate(**inputs, max_length=max_new_tokens, **generation_params)
+    
+            output_ids = self.model.generate(
+                **inputs, max_new_tokens=self.model_max_length, **generation_params
+            )
         else:
             inputs = self.tokenizer(
-                inputs_text, return_tensors='pt', padding='max_length', truncation=True
+                input_text, 
+                return_tensors='pt', 
+                padding='max_length', 
+                truncation=True, 
+                max_length=min(self.model_max_length, 1024),
             ).to(self.device)
-            outputs = self.model.generate(
+    
+            output_ids = self.model.generate(
                 **inputs, max_new_tokens=max_new_tokens, **generate_kwargs
             )
-
-        summaries = self.tokenizer.batch_decode(outputs, skip_special_tokens=True)
-        self.logger.info('Summary generation complete.')
-        return summaries
+    
+        summary = self.tokenizer.decode(
+            output_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True
+        )
+        return summary
 
     def compute_metrics(self, eval_pred):
         '''Compute ROUGE metrics for evaluation'''
         self.logger.debug('Computing metrics...')
         preds, labels = eval_pred
 
-        logger.debug(f"preds shape: {preds.shape}, max token id in preds: {preds.max()}")
+        self.logger.debug(f"preds shape: {preds.shape}, max token id in preds: {preds.max()}")
 
         decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
@@ -344,8 +356,12 @@ class SummarizationPipeline:
             self.model = AutoModelForSeq2SeqLM.from_pretrained(path).to(self.device)
             self.tokenizer = AutoTokenizer.from_pretrained(path)
 
+        self.model_max_length = min(self.tokenizer.model_max_length, self.model_max_length)
         self.model_config.is_pegasus = 'pegasus' in path.lower()
         self.logger.info(
-            'Local load complete. Model is %s type',
-            'pegasus' if self.model_config.is_pegasus else 'standard',
+            'Local load complete. Model is %s type, %s max length.',
+            'pegasus' if self.model_config.is_pegasus else 'standard', self.model_max_length
         )
+
+    def get_tokenizer(self):
+        return self.tokenizer

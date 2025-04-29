@@ -10,7 +10,7 @@ from utils import SummarizationPipeline, ModelConfig, LoggingConfig
 
 
 if __name__ == '__main__':
-    checkpoint = 'google-t5/t5-large'
+    checkpoint = 'google-t5/t5-base'
 
     model_config: ModelConfig = ModelConfig(
         model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'
