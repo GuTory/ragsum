@@ -12,7 +12,7 @@ logger = setup_logger(__name__)
 @dataclass
 class TextChunker:
     '''
-    A utility class for splitting text into chunks using LangChain's RecursiveCharacterTextSplitter.
+    A utility class for splitting text into chunks using LangChain's TokenTextSplitter.
     Each chunk will have a specified prefix, and the chunk size will be adjusted to account for the prefix length.
     '''
     tokenizer: AutoOrPegasusTokenizer
