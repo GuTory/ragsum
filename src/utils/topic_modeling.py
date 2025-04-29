@@ -3,12 +3,15 @@ Zero-shot topic modeling Modeler class.
 '''
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, TypeAlias
 from top2vec import Top2Vec
 from langchain.schema import Document
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import TokenTextSplitter
 from tqdm import tqdm
+from transformers import AutoTokenizer, PegasusTokenizer
 from utils import setup_logger
+
+AbstractTokenizer: TypeAlias = AutoTokenizer | PegasusTokenizer
 
 logger = setup_logger(__name__)
 
@@ -28,8 +31,9 @@ class TopicModeler:
     '''
 
     texts: List[str]
-    chunk_size: int = 512
-    chunk_overlap: int = 64
+    tokenizer: AbstractTokenizer = None
+    _chunk_size: int = 512
+    _chunk_overlap: int = 64
     speed: str = 'learn'
     workers: int = 4
     model: Top2Vec = field(init=False)
@@ -40,6 +44,9 @@ class TopicModeler:
         '''
         Automatically called after initialization. Triggers preprocessing and model training.
         '''
+        if self.tokenizer:
+            logger.info('Tokenizer injected with max length: %s ', self.tokenizer.model_max_length)
+            self._chunk_size = self.tokenizer.model_max_length
         logger.info('Initializing TopicModeler and starting preprocessing...')
         self._preprocess()
         logger.info('Preprocessing complete. Starting model training...')
@@ -48,20 +55,19 @@ class TopicModeler:
 
     def _preprocess(self):
         '''
-        Splits input texts into smaller overlapping chunks using LangChain's text splitter.
+        Splits input texts into smaller overlapping chunks using LangChain's TokenTextSplitter.
+        This ensures chunks respect token boundaries for language models.
         '''
         logger.info(
-            'Chunking input documents with size %d and overlap %d',
-            self.chunk_size,
-            self.chunk_overlap,
+            'Chunking input documents with token size %d and overlap %d',
+            self._chunk_size,
+            self._chunk_overlap,
         )
         docs = [
             Document(page_content=text) for text in tqdm(self.texts, desc='Preparing documents')
         ]
-        splitter = RecursiveCharacterTextSplitter(
-            separators=['\n', '\n\n', '  \n'],
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
+        splitter = TokenTextSplitter.from_huggingface_tokenizer(
+            tokenizer=self.tokenizer, chunk_size=self._chunk_size, chunk_overlap=self._chunk_overlap
         )
         chunks = splitter.split_documents(docs)
         self.processed_texts = [

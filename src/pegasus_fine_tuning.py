@@ -22,8 +22,8 @@ if __name__ == '__main__':
 
     billsum = load_dataset('FiscalNote/billsum')
 
-    tokenized = pipeline.tokenize_dataset(billsum['train'])
-    tokenized_eval = pipeline.tokenize_dataset(billsum['test'])
+    tokenized = pipeline.tokenize_dataset(billsum['train'].select(range(200)))
+    tokenized_eval = pipeline.tokenize_dataset(billsum['test'].select(range(200)))
 
     save_path = f'../models/ragsum-{checkpoint}-billsum'
 
@@ -34,12 +34,12 @@ if __name__ == '__main__':
         per_device_eval_batch_size=4,
         weight_decay=0.01,
         save_total_limit=3,
-        num_train_epochs=5,
+        num_train_epochs=6,
         predict_with_generate=True,
         warmup_steps=100,
         max_steps=50,
         fp16=True,
-        logging_steps=8,
+        logging_steps=16,
         generation_max_length=256,
         generation_num_beams=8,
     )

@@ -3,6 +3,7 @@ Helper functions for loading the already scraped dataframes.
 `load_all_available_transcripts` loads and aggregates all local csv-s
 '''
 
+import os
 from pathlib import Path
 from typing import Optional, List
 import pandas as pd
@@ -14,7 +15,7 @@ logger = setup_logger(__name__)
 
 def get_root_path() -> Path:
     '''Helper function that returns the root path of the project.'''
-    return Path("c:\\BISS") / "ragsum"
+    return Path(os.getcwd()).parent
 
 
 def load_if_scraped(company_id: str) -> Optional[pd.DataFrame]:
@@ -61,7 +62,7 @@ def load_all_available_transcripts() -> pd.DataFrame:
         if company_id in company_ids:
             logger.info(company_id)
             df = load_if_scraped(company_id=company_id)
-            if df:
+            if df is not None and not df.empty:
                 all_dfs.append(df)
                 logger.info('Successfully loaded %s', file.name)
 
