@@ -62,7 +62,7 @@ def load_all_available_transcripts() -> pd.DataFrame:
         if company_id in company_ids:
             logger.info(company_id)
             df = load_if_scraped(company_id=company_id)
-            if not df.empty:
+            if df is not None and not df.empty:
                 all_dfs.append(df)
                 logger.info('Successfully loaded %s', file.name)
 
