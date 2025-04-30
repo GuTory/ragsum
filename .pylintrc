@@ -430,9 +430,15 @@ confidence=HIGH,
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 
+# Disabling too many local variables
+# Disabling textstat error - there is no error
+# Disabling tuple unpacking warning
 # Disabling duplicate codes
 # R0401 is for disabling possible cyclic imports
-disable=R0401,
+disable=R0914,
+        E1101,
+        W0632,
+        R0401,
         duplicate-code,
         raw-checker-failed,
         bad-inline-option,

@@ -46,10 +46,11 @@ class TextChunker:
             chunk_size=self._adjusted_chunk_size,
             chunk_overlap=self._chunk_overlap,
         )
-
         logger.info(
-            f'Initialized TextChunker with chunk_size={self._adjusted_chunk_size}, '
-            f'chunk_overlap={self._chunk_overlap}, prefix="{self.prefix}"'
+            'Initialized TextChunker with chunk_size=%d, chunk_overlap=%d, prefix="%s"',
+            self._adjusted_chunk_size,
+            self._chunk_overlap,
+            self.prefix
         )
 
     def chunk_text(self, text: str) -> List[str]:
@@ -69,5 +70,5 @@ class TextChunker:
         for chunk in tqdm(chunks, desc="Chunking text"):
             chunked_with_prefix.append(f'{self.prefix}{chunk}')
 
-        logger.info(f'Text successfully split into {len(chunked_with_prefix)} chunks.')
+        logger.info('Text successfully split into %d chunks.', len(chunked_with_prefix))
         return chunked_with_prefix

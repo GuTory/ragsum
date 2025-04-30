@@ -7,7 +7,7 @@ from nltk.translate.meteor_score import meteor_score
 import textstat
 import bert_score
 
-def compute_metrics(originals: list, summaries: list, model_name, type='baseline'):
+def compute_metrics(originals: list, summaries: list, model_name, summarization_type='baseline'):
     '''Metric computation for summaries'''
     results = []
     rouge_evaluator = Rouge()
@@ -27,7 +27,7 @@ def compute_metrics(originals: list, summaries: list, model_name, type='baseline
         bleu_score_val = sentence_bleu([reference_tokens], candidate_tokens)
 
         # BERTScore
-        P, R, F1 = bert_score.score(
+        p, r, f1 = bert_score.score(
             [summary], [original_text], rescale_with_baseline=True, lang='en'
         )
 
@@ -49,12 +49,13 @@ def compute_metrics(originals: list, summaries: list, model_name, type='baseline
             'companyid': company_id,
             'companyname': company_name,
             'bleu': bleu_score_val,
-            'bert_precision': P.item(),
-            'bert_recall': R.item(),
-            'bert_f1': F1.item(),
+            'bert_precision': p.item(),
+            'bert_recall': r.item(),
+            'bert_f1': f1.item(),
             'meteor': meteor,
             'compression_ratio': compression_ratio,
-            'readability': readability
+            'readability': readability,
+            'type': summarization_type
         }
 
         for metric, scores in rouge_scores.items():

@@ -156,11 +156,13 @@ class SummarizationPipeline:
 
         if model_vocab_size != tokenizer_vocab_size:
             self.logger.warning(
-                f"Model vocab size ({model_vocab_size}) and tokenizer vocab size ({tokenizer_vocab_size}) mismatch. Resizing model embeddings."
+                'Model vocab size (%s) and tokenizer vocab size (%s) mismatch. Resizing model embeddings.',
+                tokenizer_vocab_size,
+                model_vocab_size,
             )
             self.model.resize_token_embeddings(tokenizer_vocab_size)
         else:
-            self.logger.info("Model and tokenizer vocab sizes match. No resizing needed.")
+            self.logger.info('Model and tokenizer vocab sizes match. No resizing needed.')
 
     def set_device(self, device: Union[str, torch.device]):
         '''Setting device as hardware parameter.'''
@@ -314,7 +316,7 @@ class SummarizationPipeline:
         self.logger.debug('Computing metrics...')
         preds, labels = eval_pred
 
-        self.logger.debug(f"preds shape: {preds.shape}, max token id in preds: {preds.max()}")
+        self.logger.debug('preds shape: %s, max token id in preds: %s', preds.shape, preds.max())
 
         decoded_preds = self.tokenizer.batch_decode(preds, skip_special_tokens=True)
 
@@ -359,4 +361,5 @@ class SummarizationPipeline:
         )
 
     def get_tokenizer(self):
+        '''Function to enable users acquiring the tokenizer of the model, so it can be used for tokenizing.'''
         return self.tokenizer
