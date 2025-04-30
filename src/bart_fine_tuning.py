@@ -1,6 +1,5 @@
 """Fine-tuning script for BART model."""
 
-
 import os
 import numpy as np
 import evaluate
@@ -31,6 +30,7 @@ model = AutoModelForSeq2SeqLM.from_pretrained(checkpoint)
 billsum = load_dataset('FiscalNote/billsum')
 
 prefix = 'summarize: '
+
 
 def preprocess_function(examples):
     '''Preprocessing dataset.'''

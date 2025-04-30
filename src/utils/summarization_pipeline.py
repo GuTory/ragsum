@@ -262,19 +262,13 @@ class SummarizationPipeline:
         self.logger.info('Training complete.')
 
     def summarize(
-        self,
-        text: str,
-        max_new_tokens: int = 100,
-        min_length: int = 50,
-        **generate_kwargs
+        self, text: str, max_new_tokens: int = 100, min_length: int = 50, **generate_kwargs
     ) -> str:
         '''Generate a summary for a single text using the model'''
-        self.logger.info(
-            'Generating summary (max_new_tokens=%s)', max_new_tokens
-        )
-    
+        self.logger.info('Generating summary (max_new_tokens=%s)', max_new_tokens)
+
         input_text = self.prefix + text if self.prefix else text
-    
+
         if self.model_config.is_pegasus:
             inputs = self.tokenizer(
                 input_text,
@@ -283,7 +277,7 @@ class SummarizationPipeline:
                 truncation=True,
                 max_length=min(self.model_max_length, 1024),
             ).to(self.device)
-    
+
             pegasus_params = {
                 'num_beams': 8,
                 'length_penalty': 1,
@@ -291,25 +285,25 @@ class SummarizationPipeline:
                 'early_stopping': True,
                 'min_length': min_length,
             }
-    
+
             generation_params = {**pegasus_params, **generate_kwargs}
-    
+
             output_ids = self.model.generate(
                 **inputs, max_new_tokens=self.model_max_length, **generation_params
             )
         else:
             inputs = self.tokenizer(
-                input_text, 
-                return_tensors='pt', 
-                padding='max_length', 
-                truncation=True, 
+                input_text,
+                return_tensors='pt',
+                padding='max_length',
+                truncation=True,
                 max_length=min(self.model_max_length, 1024),
             ).to(self.device)
-    
+
             output_ids = self.model.generate(
                 **inputs, max_new_tokens=max_new_tokens, **generate_kwargs
             )
-    
+
         summary = self.tokenizer.decode(
             output_ids[0], skip_special_tokens=True, clean_up_tokenization_spaces=True
         )
@@ -360,7 +354,8 @@ class SummarizationPipeline:
         self.model_config.is_pegasus = 'pegasus' in path.lower()
         self.logger.info(
             'Local load complete. Model is %s type, %s max length.',
-            'pegasus' if self.model_config.is_pegasus else 'standard', self.model_max_length
+            'pegasus' if self.model_config.is_pegasus else 'standard',
+            self.model_max_length,
         )
 
     def get_tokenizer(self):

@@ -1,6 +1,4 @@
-'''
-Scraper module for reaching out to Wharton dataset and scraping company transcripts.
-'''
+'''Scraper module for reaching out to Wharton dataset and scraping company transcripts.'''
 
 import logging
 import uuid

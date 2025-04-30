@@ -1,6 +1,4 @@
-'''
-Zero-shot topic modeling Modeler class.
-'''
+'''Zero-shot topic modeling Modeler class.'''
 
 from dataclasses import dataclass, field
 from typing import List, Optional, TypeAlias

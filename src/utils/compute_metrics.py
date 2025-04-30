@@ -1,3 +1,5 @@
+'''Computing metrics for summarization.'''
+
 import pandas as pd
 from rouge import Rouge
 from nltk.translate.bleu_score import sentence_bleu
@@ -6,6 +8,7 @@ import textstat
 import bert_score
 
 def compute_metrics(originals: list, summaries: list, model_name, type='baseline'):
+    '''Metric computation for summaries'''
     results = []
     rouge_evaluator = Rouge()
 

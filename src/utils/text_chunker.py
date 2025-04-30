@@ -1,3 +1,5 @@
+'''Text Chunker for transcripts'''
+
 from dataclasses import dataclass, field
 from typing import List, TypeAlias
 from tqdm import tqdm
@@ -7,7 +9,9 @@ from transformers import AutoTokenizer, PegasusTokenizer
 AutoOrPegasusTokenizer: TypeAlias = AutoTokenizer | PegasusTokenizer
 
 from utils import setup_logger
+
 logger = setup_logger(__name__)
+
 
 @dataclass
 class TextChunker:
@@ -15,6 +19,7 @@ class TextChunker:
     A utility class for splitting text into chunks using LangChain's TokenTextSplitter.
     Each chunk will have a specified prefix, and the chunk size will be adjusted to account for the prefix length.
     '''
+
     tokenizer: AutoOrPegasusTokenizer
     prefix: str = ''
     _adjusted_chunk_size: int = field(init=False)
@@ -32,7 +37,7 @@ class TextChunker:
             chunk_size = 1024
         else:
             chunk_size = min(1024, self.tokenizer.model_max_length)
-            
+
         self._adjusted_chunk_size = max(1, chunk_size - len(self.prefix.split()))
         self._chunk_overlap = max(1, self._adjusted_chunk_size // 10)
 
@@ -42,8 +47,10 @@ class TextChunker:
             chunk_overlap=self._chunk_overlap,
         )
 
-        logger.info(f'Initialized TextChunker with chunk_size={self._adjusted_chunk_size}, '
-                    f'chunk_overlap={self._chunk_overlap}, prefix="{self.prefix}"')
+        logger.info(
+            f'Initialized TextChunker with chunk_size={self._adjusted_chunk_size}, '
+            f'chunk_overlap={self._chunk_overlap}, prefix="{self.prefix}"'
+        )
 
     def chunk_text(self, text: str) -> List[str]:
         '''
