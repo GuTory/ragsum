@@ -2,28 +2,39 @@
 
 import pandas as pd
 from rouge import Rouge
+import nltk
+
 from nltk.translate.bleu_score import sentence_bleu
 from nltk.translate.meteor_score import meteor_score
+from nltk.translate import meteor
+from nltk import word_tokenize
 import textstat
 import bert_score
 
-def compute_metrics(originals: list, summaries: list, model_name, summarization_type='baseline'):
+nltk.download('punkt')          # for word_tokenize & sent_tokenize
+nltk.download('wordnet')        # if you need WordNet in METEOR internals
+nltk.download('omw-1.4')
+nltk.download('punkt_tab')
+
+def compute_metrics(originals: list, summaries: list, model_name, summarization_type):
     '''Metric computation for summaries'''
+
     results = []
     rouge_evaluator = Rouge()
 
     for original_text, summary in zip(originals, summaries):
-        # Basic metadata placeholder — adjust as needed if available
-        uuid = company_id = company_name = None  # Replace with actual data if available
+        uuid = company_id = company_name = None
 
-        # ROUGE
+        # ROUGE requires raw string inputs
         rouge_scores = rouge_evaluator.get_scores(summary, original_text)
         if isinstance(rouge_scores, list):
             rouge_scores = rouge_scores[0]
 
+        # Tokenize for BLEU, METEOR, and compression
+        reference_tokens = word_tokenize(original_text)
+        candidate_tokens = word_tokenize(summary)
+
         # BLEU
-        reference_tokens = original_text.split()
-        candidate_tokens = summary.split()
         bleu_score_val = sentence_bleu([reference_tokens], candidate_tokens)
 
         # BERTScore
@@ -31,10 +42,10 @@ def compute_metrics(originals: list, summaries: list, model_name, summarization_
             [summary], [original_text], rescale_with_baseline=True, lang='en'
         )
 
-        # METEOR
-        meteor = meteor_score([original_text], summary)
+        # METEOR using token lists; returns 0 if no alignment
+        meteor_val = meteor([reference_tokens], candidate_tokens)
 
-        # Compression
+        # Compression ratio
         original_len = len(reference_tokens)
         summary_len = len(candidate_tokens)
         compression_ratio = summary_len / original_len if original_len > 0 else 0
@@ -42,8 +53,8 @@ def compute_metrics(originals: list, summaries: list, model_name, summarization_
         # Readability
         readability = textstat.flesch_reading_ease(summary)
 
-        # Result aggregation
-        row_result = {
+        # Aggregate metrics
+        row = {
             'model_name': model_name,
             'uuid': uuid,
             'companyid': company_id,
@@ -52,17 +63,16 @@ def compute_metrics(originals: list, summaries: list, model_name, summarization_
             'bert_precision': p.item(),
             'bert_recall': r.item(),
             'bert_f1': f1.item(),
-            'meteor': meteor,
+            'meteor': meteor_val,
             'compression_ratio': compression_ratio,
             'readability': readability,
             'type': summarization_type
         }
+        for m, scores in rouge_scores.items():
+            row[f'{m}_r'] = scores['r']
+            row[f'{m}_p'] = scores['p']
+            row[f'{m}_f'] = scores['f']
 
-        for metric, scores in rouge_scores.items():
-            row_result[f'{metric}_r'] = scores['r']
-            row_result[f'{metric}_p'] = scores['p']
-            row_result[f'{metric}_f'] = scores['f']
-
-        results.append(row_result)
+        results.append(row)
 
     return pd.DataFrame(results)

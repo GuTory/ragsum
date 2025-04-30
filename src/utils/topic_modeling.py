@@ -30,7 +30,7 @@ class TopicModeler:
 
     texts: List[str]
     tokenizer: AbstractTokenizer = None
-    _chunk_size: int = 512
+    _chunk_size: int = 1024
     _chunk_overlap: int = 64
     speed: str = 'learn'
     workers: int = 4
@@ -44,7 +44,7 @@ class TopicModeler:
         '''
         if self.tokenizer:
             logger.info('Tokenizer injected with max length: %s ', self.tokenizer.model_max_length)
-            self._chunk_size = self.tokenizer.model_max_length
+            self._chunk_size = min(1024, self.tokenizer.model_max_length)
         logger.info('Initializing TopicModeler and starting preprocessing...')
         self._preprocess()
         logger.info('Preprocessing complete. Starting model training...')
