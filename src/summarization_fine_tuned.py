@@ -134,4 +134,4 @@ final_df.to_csv(output_path,
     doublequote=True,
     quotechar='"',
     )
-print(f"State-of-the-art evaluation complete. Metrics saved to {output_path}.")
+print(f"Fine-tuned evaluation complete. Metrics saved to {output_path}.")
