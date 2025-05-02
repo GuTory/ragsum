@@ -1,141 +1,85 @@
 '''Zero-shot topic modeling Modeler class.'''
 
 from dataclasses import dataclass, field
-from typing import List, Optional, TypeAlias
+from typing import List, Optional, Tuple
 from top2vec import Top2Vec
 from langchain.schema import Document
-from langchain_text_splitters import TokenTextSplitter
 from tqdm import tqdm
-from transformers import AutoTokenizer, PegasusTokenizer
-from utils import setup_logger
+import logging
 
-AbstractTokenizer: TypeAlias = AutoTokenizer | PegasusTokenizer
-
-logger = setup_logger(__name__)
-
+logger = logging.getLogger(__name__)
 
 @dataclass
 class TopicModeler:
     '''
-    A wrapper around Top2Vec that handles preprocessing, chunking,
-    and training on a list of input texts.
+    TopicModeler wraps Top2Vec for pre-chunked Document inputs.
 
-    Attributes:
-        texts: Raw input documents to be processed.
-        chunk_size: Maximum number of characters per chunk.
-        chunk_overlap: Overlap between chunks.
-        speed: Top2Vec training speed ('learn', 'deep-learn', 'fast-learn').
-        workers: Number of threads to use for training.
+    Example:
+        from langchain.schema import Document
+
+        chunks = [Document(page_content='chunk1 text...'), Document(page_content='chunk2 text...')]
+        tm = TopicModeler(chunks=chunks , speed='learn', workers=8)
+        tm.print_topics()
+        tm.generate_wordcloud(0)
     '''
 
-    texts: List[str]
-    tokenizer: AbstractTokenizer = None
-    _chunk_size: int = 1024
-    _chunk_overlap: int = 64
+    chunks: list
     speed: str = 'learn'
     workers: int = 4
-    model: Top2Vec = field(init=False)
-    processed_texts: List[str] = field(init=False)
-    hierarchy: Optional[List[int]] = field(default=None, init=False)
+    num_topics: int = field(init=False)
 
     def __post_init__(self):
         '''
-        Automatically called after initialization. Triggers preprocessing and model training.
+        Train Top2Vec on pre-chunked Documents.
+
+        Args:
+            chunks: List of Document objects, each with .page_content set to text chunk.
         '''
-        if self.tokenizer:
-            logger.info('Tokenizer injected with max length: %s ', self.tokenizer.model_max_length)
-            self._chunk_size = min(1024, self.tokenizer.model_max_length)
-        logger.info('Initializing TopicModeler and starting preprocessing...')
-        self._preprocess()
-        logger.info('Preprocessing complete. Starting model training...')
-        self._train_model()
+        self.model: Optional[Top2Vec] = None
+        texts = [chunk.page_content for chunk in self.chunks]
+        logger.info(f'Training Top2Vec on {len(texts)} chunks '
+                    f'(speed={self.speed}, workers={self.workers})…')
+        self.model = Top2Vec(texts, speed=self.speed, workers=self.workers)
+        self.get_num_topics()
         logger.info('Model training complete.')
 
-    def _preprocess(self):
-        '''
-        Splits input texts into smaller overlapping chunks using LangChain's TokenTextSplitter.
-        This ensures chunks respect token boundaries for language models.
-        '''
-        logger.info(
-            'Chunking input documents with token size %d and overlap %d',
-            self._chunk_size,
-            self._chunk_overlap,
-        )
-        docs = [
-            Document(page_content=text) for text in tqdm(self.texts, desc='Preparing documents')
-        ]
-        splitter = TokenTextSplitter.from_huggingface_tokenizer(
-            tokenizer=self.tokenizer, chunk_size=self._chunk_size, chunk_overlap=self._chunk_overlap
-        )
-        chunks = splitter.split_documents(docs)
-        self.processed_texts = [
-            chunk.page_content for chunk in tqdm(chunks, desc='Splitting documents')
-        ]
-        logger.info(
-            'Generated %d total chunks from %d original texts',
-            len(self.processed_texts),
-            len(self.texts),
-        )
+    def get_num_topics(self):
+        if self.model is None:
+            raise ValueError('Model has not been trained. Call fit() first.')
+        self.num_topics = self.model.get_num_topics()
+        return self.num_topics
 
-    def _train_model(self):
-        '''
-        Trains the Top2Vec model on the preprocessed chunks.
-        '''
-        self.model = Top2Vec(self.processed_texts, speed=self.speed, workers=self.workers)
 
-    def get_topics(self, num_topics: int = None) -> List[dict]:
-        """
-        Returns the top keywords from the discovered topics.
-
-        Args:
-            num_topics: Number of top topics to return. If None, returns all topics.
+    def get_topics(self, num_topics: Optional[int]) -> Tuple[List[List[str]], List[List[float]], List[int]]:
+        '''
+        Retrieve topics from the trained model.
 
         Returns:
-            A list of dictionaries, each containing a topic number and its keywords.
-        """
-        topic_count = self.model.get_num_topics() if num_topics is None else num_topics
-        topic_words, _, topic_nums = self.model.get_topics(topic_count)
-        topics = []
-
-        for topic_num, words in zip(topic_nums, topic_words):
-            topics.append({"topic_id": topic_num, "keywords": words})
-
-        return topics
-
-    def show_wordcloud(self, topic_id: int = 0):
+            topic_words: top words per topic
+            word_scores: scores for each word
+            topic_nums: topic identifiers
         '''
-        Displays a word cloud for a given topic ID.
+        if self.model is None:
+            raise ValueError('Model has not been trained. Call fit() first.')
+        if not num_topics: num_topics = self.num_topics
+        return self.model.get_topics(num_topics)
+
+    def print_topics(self) -> None:
+        '''
+        Print the top N words for each topic.
+        '''
+        topic_words, _, topic_nums = self.get_topics()
+        for words, tid in zip(topic_words, topic_nums):
+            print(f'Topic #{tid}: ' + ', '.join(words))
+
+    def generate_wordcloud(self, topic_num: int) -> None:
+        '''
+        Generate and show a wordcloud for a given topic.
 
         Args:
-            topic_id: The topic index to visualize.
+            topic_num: The numeric ID of the topic.
         '''
-        self.model.generate_topic_wordcloud(topic_id)
-
-    def reduce_topics(self, num_topics: int = 1):
-        '''
-        Reduces the number of topics using hierarchical topic reduction and returns the reduced topics' keywords.
-
-        Args:
-            num_topics: The number of final reduced topics.
-
-        Returns:
-            A list of dictionaries containing the reduced topics and their keywords.
-        '''
-        logger.info('Reducing topics to %d using hierarchical topic reduction...', num_topics)
-        self.model.hierarchical_topic_reduction(num_topics=num_topics)
-        self.hierarchy = self.model.get_topic_hierarchy()
-
-        reduced_topics = []
-        for reduced_topic in range(num_topics):
-            original_topics = [i for i, x in enumerate(self.hierarchy) if x == reduced_topic]
-            topic_keywords = []
-
-            for original_topic in original_topics:
-                topic_words, _, _ = self.model.get_topics(1, topic_num=original_topic)
-                topic_keywords.extend(topic_words[0])
-
-            topic_keywords = list(set(topic_keywords))
-
-            reduced_topics.append({"reduced_topic_id": reduced_topic, "keywords": topic_keywords})
-
-        return reduced_topics
+        if self.model is None:
+            raise ValueError('Model has not been trained. Call fit() first.')
+        logger.info(f'Generating wordcloud for topic {topic_num}…')
+        self.model.generate_topic_wordcloud(topic_num)
