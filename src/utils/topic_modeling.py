@@ -40,6 +40,8 @@ class TopicModeler:
         logger.info(f'Training Top2Vec on {len(texts)} chunks '
                     f'(speed={self.speed}, workers={self.workers})…')
         self.model = Top2Vec(texts, speed=self.speed, workers=self.workers)
+        self.model.hierarchical_topic_reduction(num_topics=1)
+
         self.get_num_topics()
         logger.info('Model training complete.')
 
