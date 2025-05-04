@@ -53,6 +53,13 @@ class TextChunker:
             self.prefix
         )
 
+    def resize_chunks(self, size: int):
+        self._splitter = TokenTextSplitter.from_huggingface_tokenizer(
+            tokenizer=self.tokenizer,
+            chunk_size=size,
+            chunk_overlap=self._chunk_overlap,
+        )
+
     def chunk_text(self, text: str) -> List[str]:
         '''
         Splits the input text into chunks, each prefixed with the specified prefix.
