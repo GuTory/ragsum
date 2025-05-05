@@ -50,7 +50,6 @@ checkpoints = [
     'google/pegasus-x-large',
     'human-centered-summarization/financial-summarization-pegasus',
 ]
-local_paths = [f'../models/ragsum-{ckpt}-billsum' for ckpt in checkpoints]
 
 
 # In[ ]:
@@ -75,7 +74,7 @@ retriever = Retriever(df.combined.tolist(), 5)
 # In[ ]:
 
 
-for checkpoint, path in zip(checkpoints, local_paths):
+for checkpoint in checkpoints:
     model_config = ModelConfig(
         model_name_or_path=checkpoint,
         device='cuda' if torch.cuda.is_available() else 'cpu'
@@ -83,9 +82,8 @@ for checkpoint, path in zip(checkpoints, local_paths):
     pipeline = SummarizationPipeline(
         model_config=model_config,
         logging_config=logging_config,
-        remote=False
+        remote=True
     )
-    pipeline.load_from_local(path)
 
     tokenizer = pipeline.get_tokenizer()
     chunker = TextChunker(tokenizer)
