@@ -3,12 +3,10 @@
 
 # # Summarization with RAG and fine-tuned summarization models
 
-# In[ ]:
-
-
 import os
 import gc
 from datetime import date
+from collections import Counter
 
 import torch
 from tqdm.notebook import tqdm
@@ -26,24 +24,14 @@ from utils import (
     TopicModeler
 )
 
-
-# In[ ]:
-
-
+# Load transcripts
 transcripts_df = load_all_available_transcripts()
 print(transcripts_df.shape)
-
-
-# In[ ]:
-
 
 original_texts = transcripts_df['full_text'].tolist()
 metadata = transcripts_df[['uuid', 'companyid', 'companyname', 'word_count_nltk']]
 
-
-# In[ ]:
-
-
+# Model setup
 checkpoints = [
     'facebook/bart-large-cnn',
     'google-t5/t5-base',
@@ -52,29 +40,19 @@ checkpoints = [
 ]
 local_paths = [f'../models/ragsum-{ckpt}-billsum' for ckpt in checkpoints]
 
-
-# In[ ]:
-
-
 logging_config = LoggingConfig()
-
 all_metrics = []
 
-# In[ ]:
-
+# Load retriever data
 df = pd.read_csv(
     'hf://datasets/sohomghosh/FinRAD_Financial_Readability_Assessment_Dataset/FinRAD_13K_terms_definitions_labels.csv'
 )
 df = df[['terms', 'definitions', 'source', 'assigned_readability']]
 df = df.dropna(subset=['definitions'])
 df['combined'] = df['terms'] + ': ' + df['definitions']
-
 retriever = Retriever(df.combined.tolist(), 5)
 
-
-# In[ ]:
-
-
+# Loop through models
 for checkpoint, path in zip(checkpoints, local_paths):
     model_config = ModelConfig(
         model_name_or_path=checkpoint,
@@ -91,6 +69,8 @@ for checkpoint, path in zip(checkpoints, local_paths):
     chunker = TextChunker(tokenizer)
 
     summaries = []
+    retrieved_counter = Counter()  # Counter for retriever hits
+
     for text in tqdm(original_texts, desc=f"Fine-tuned summarizing with {checkpoint}"):
         chunks = chunker.chunk_text(text)
         
@@ -110,7 +90,11 @@ for checkpoint, path in zip(checkpoints, local_paths):
 
         topics_string = ' '.join(words)
         top_results, _ = retriever.search(topics_string, 3)
-        chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ' )
+
+        # Update the counter with retrieved terms
+        retrieved_counter.update(top_results)
+
+        chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
         combined = " ".join(chunk_summaries)
 
@@ -129,6 +113,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
     torch.cuda.empty_cache()
     gc.collect()
 
+    # Compute metrics
     metrics_df = compute_metrics(
         originals=original_texts,
         summaries=summaries,
@@ -145,12 +130,15 @@ for checkpoint, path in zip(checkpoints, local_paths):
 
     all_metrics.append(metrics_df)
 
+    # Print retriever usage stats for this model
+    print(f"\nRetriever usage frequency for {checkpoint}:")
+    for term, count in retrieved_counter.most_common():
+        print(f"{term[:80]}... → {count} times")
+
+# Combine all metrics
 final_df = pd.concat(all_metrics, ignore_index=True)
 
-
-# In[ ]:
-
-
+# Save to CSV
 output_path = 'summarization_evaluation_metrics.csv'
 if os.path.exists(output_path):
     existing_df = pd.read_csv(
@@ -170,6 +158,5 @@ final_df.to_csv(output_path,
     escapechar='\\',
     doublequote=True,
     quotechar='"',
-    )
-print(f"Fine-tuned model with RAG evaluation complete. Metrics saved to {output_path}.")
-
+)
+print(f"\nFine-tuned model with RAG evaluation complete. Metrics saved to {output_path}.")

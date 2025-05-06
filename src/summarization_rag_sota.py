@@ -131,7 +131,7 @@ for checkpoint in checkpoints:
         originals=original_texts,
         summaries=summaries,
         model_name=checkpoint,
-        summarization_type='RAG + fine-tuned'
+        summarization_type='RAG + baseline'
     )
 
     metrics_df['uuid'] = metadata['uuid'].values
@@ -169,5 +169,5 @@ final_df.to_csv(output_path,
     doublequote=True,
     quotechar='"',
     )
-print(f"Fine-tuned model with RAG evaluation complete. Metrics saved to {output_path}.")
+print(f"SOTA model with RAG evaluation complete. Metrics saved to {output_path}.")
 
