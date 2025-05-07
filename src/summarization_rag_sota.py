@@ -23,7 +23,7 @@ from utils import (
     LoggingConfig,
     ModelConfig,
     Retriever,
-    TopicModeler
+    GensimTopicModeler as TopicModeler,
 )
 
 
@@ -76,39 +76,35 @@ retriever = Retriever(df.combined.tolist(), 5)
 
 for checkpoint in checkpoints:
     model_config = ModelConfig(
-        model_name_or_path=checkpoint,
-        device='cuda' if torch.cuda.is_available() else 'cpu'
+        model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'
     )
     pipeline = SummarizationPipeline(
-        model_config=model_config,
-        logging_config=logging_config,
-        remote=True
+        model_config=model_config, logging_config=logging_config, remote=True
     )
 
     tokenizer = pipeline.get_tokenizer()
     chunker = TextChunker(tokenizer)
 
     summaries = []
-    for text in tqdm(original_texts, desc=f"Fine-tuned summarizing with {checkpoint}"):
+    for i, text in tqdm(
+        enumerate(original_texts),
+        total=len(original_texts),
+        desc=f"Fine-tuned summarizing with {checkpoint}",
+    ):
+        print(f'Summarizing text nr.{i}')
         chunks = chunker.chunk_text(text)
-        
-        chunker.resize_chunks(int(chunker._adjusted_chunk_size / 4))
-        tm_chunks = chunker.chunk_text(text)
-        chunker.resize_chunks(int(chunker._adjusted_chunk_size * 4))
-        
+
         tm = TopicModeler(
-            chunks=[Document(page_content=doc) for doc in tm_chunks], 
-            speed='learn', 
-            workers=8
+            chunks=[Document(page_content=doc) for doc in chunks], speed='learn', workers=8
         )
         topic_words, _, topic_nums = tm.get_topics(1)
-        
+
         for words, tid in zip(topic_words, topic_nums):
             print(f'Topic: ' + ' '.join(words))
 
         topics_string = ' '.join(words)
         top_results, _ = retriever.search(topics_string, 3)
-        chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ' )
+        chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
         combined = " ".join(chunk_summaries)
 
@@ -131,7 +127,7 @@ for checkpoint in checkpoints:
         originals=original_texts,
         summaries=summaries,
         model_name=checkpoint,
-        summarization_type='RAG + baseline'
+        summarization_type='RAG + baseline',
     )
 
     metrics_df['uuid'] = metadata['uuid'].values
@@ -149,25 +145,25 @@ final_df = pd.concat(all_metrics, ignore_index=True)
 # In[ ]:
 
 
-output_path = 'summarization_evaluation_metrics.csv'
+output_path = 'summarization_evaluation_metrics_rag_sota.csv'
 if os.path.exists(output_path):
     existing_df = pd.read_csv(
         output_path,
-        sep='\t',             
+        sep='\t',
         quoting=1,
-        quotechar='"',        
-        escapechar='\\',      
-        doublequote=True,     
+        quotechar='"',
+        escapechar='\\',
+        doublequote=True,
         engine='python',
     )
     final_df = pd.concat([existing_df, final_df], ignore_index=True)
-final_df.to_csv(output_path, 
-    index=False, 
-    sep='\t', 
+final_df.to_csv(
+    output_path,
+    index=False,
+    sep='\t',
     quoting=1,
     escapechar='\\',
     doublequote=True,
     quotechar='"',
-    )
+)
 print(f"SOTA model with RAG evaluation complete. Metrics saved to {output_path}.")
-

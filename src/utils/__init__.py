@@ -8,3 +8,4 @@ from .retriever import Retriever
 from .topic_modeling import TopicModeler
 from .compute_metrics import compute_metrics
 from .text_chunker import TextChunker
+from .topic_modeling_gensim import GensimTopicModeler
