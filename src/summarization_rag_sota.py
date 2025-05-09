@@ -95,9 +95,9 @@ for checkpoint in checkpoints:
         chunks = chunker.chunk_text(text)
 
         tm = TopicModeler(
-            chunks=[Document(page_content=doc) for doc in chunks], speed='learn', workers=8
+            chunks=[Document(page_content=doc) for doc in chunks], num_topics=6
         )
-        topic_words, _, topic_nums = tm.get_topics(1)
+        topic_words, _, topic_nums = tm.get_topics(3)
 
         for words, tid in zip(topic_words, topic_nums):
             print(f'Topic: ' + ' '.join(words))
@@ -105,6 +105,9 @@ for checkpoint in checkpoints:
         topics_string = ' '.join(words)
         top_results, _ = retriever.search(topics_string, 3)
         chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
+
+        print(f'Inserted chunk: {chunks[0]}')
+
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
         combined = " ".join(chunk_summaries)
 

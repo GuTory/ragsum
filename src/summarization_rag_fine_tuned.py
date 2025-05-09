@@ -77,7 +77,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
         chunks = chunker.chunk_text(text)
 
         tm = TopicModeler(
-            chunks=[Document(page_content=doc) for doc in chunks], speed='learn', workers=8
+            chunks=[Document(page_content=doc) for doc in chunks], num_topics=6
         )
         topic_words, _, topic_nums = tm.get_topics(1)
 
@@ -91,6 +91,9 @@ for checkpoint, path in zip(checkpoints, local_paths):
         retrieved_counter.update(top_results)
 
         chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
+
+        print(f'Inserted chunk: {chunks[0]}')
+
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
         combined = " ".join(chunk_summaries)
 

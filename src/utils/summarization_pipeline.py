@@ -267,7 +267,7 @@ class SummarizationPipeline:
         self, text: str, max_new_tokens: int = 100, min_length: int = 50, **generate_kwargs
     ) -> str:
         '''Generate a summary for a single text using the model'''
-        self.logger.info('Generating summary (max_new_tokens=%s)', max_new_tokens)
+        self.logger.info('Generating summary')
 
         input_text = self.prefix + text if self.prefix else text
 

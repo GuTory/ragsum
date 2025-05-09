@@ -43,6 +43,37 @@ class GensimTopicModeler:
         stop_words = set(stopwords.words('english'))
         return [word for word in tokens if word.isalpha() and word not in stop_words]
 
+    def get_topics(self, num_topics: Optional[int] = None) -> Tuple[List[List[str]], List[List[float]], List[int]]:
+        """
+        Retrieve topics from the trained LDA model.
+
+        Args:
+            num_topics: Number of topics to retrieve (defaults to all if not specified).
+
+        Returns:
+            topic_words: top words per topic
+            word_scores: probabilities for each word
+            topic_nums: topic identifiers
+        """
+        if self.lda_model is None:
+            raise ValueError('Model has not been trained.')
+
+        if num_topics is None or num_topics > self.num_topics:
+            num_topics = self.num_topics
+
+        topic_words = []
+        word_scores = []
+        topic_nums = []
+
+        for idx in range(num_topics):
+            topic = self.lda_model.show_topic(idx, topn=10)
+            words, scores = zip(*topic)
+            topic_words.append(list(words))
+            word_scores.append(list(scores))
+            topic_nums.append(idx)
+
+        return topic_words, word_scores, topic_nums
+
     def print_topics(self, num_words: int = 10):
         for idx, topic in self.lda_model.show_topics(num_topics=self.num_topics, num_words=num_words, formatted=False):
             print(f"Topic #{idx}: {', '.join([word for word, _ in topic])}")
