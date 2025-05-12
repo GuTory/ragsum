@@ -1,11 +1,9 @@
 '''Zero-shot topic modeling Modeler class.'''
 
+import logging
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from top2vec import Top2Vec
-from langchain.schema import Document
-from tqdm import tqdm
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +47,7 @@ class TopicModeler:
         logger.info('Model training complete.')
 
     def get_num_topics(self):
+        '''Fetching the available number of topics discovered in the text corpus.'''
         if self.model is None:
             raise ValueError('Model has not been trained. Call fit() first.')
         self.num_topics = self.model.get_num_topics()

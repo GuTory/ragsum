@@ -20,13 +20,9 @@ from utils import (
     ModelConfig,
 )
 
-
 # In[ ]:
 
-
 transcripts_df = load_all_available_transcripts()
-transcripts_df.shape
-
 
 # In[ ]:
 
