@@ -7,13 +7,13 @@ from gensim import corpora, models
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+
+from utils import setup_logger
 
 nltk.download('punkt')
 nltk.download('stopwords')
-
-
-
-from utils import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -31,6 +31,7 @@ class GensimTopicModeler:
         topics = tm.get_topics(num_topics=5)
         tm.generate_wordcloud(0)
     '''
+
     chunks: List[Document]
     num_topics: int = 10
     passes: int = 10
@@ -89,15 +90,14 @@ class GensimTopicModeler:
         return topic_words, word_scores, topic_nums
 
     def print_topics(self, num_words: int = 10):
+        '''Printing the topics discovered in the text corpus.'''
         for idx, topic in self.lda_model.show_topics(
             num_topics=self.num_topics, num_words=num_words, formatted=False
         ):
             print(f"Topic #{idx}: {', '.join([word for word, _ in topic])}")
 
     def generate_wordcloud(self, topic_num: int):
-        from wordcloud import WordCloud
-        import matplotlib.pyplot as plt
-
+        '''Visual generation of discovered words related to one topic.'''
         topic_words = dict(self.lda_model.show_topic(topic_num, topn=30))
         wc = WordCloud(width=800, height=400).generate_from_frequencies(topic_words)
         plt.imshow(wc, interpolation='bilinear')

@@ -74,7 +74,7 @@ class TopicModeler:
         '''
         Print the top N words for each topic.
         '''
-        topic_words, _, topic_nums = self.get_topics()
+        topic_words, _, topic_nums = self.get_topics(self.num_topics)
         for words, tid in zip(topic_words, topic_nums):
             print(f'Topic #{tid}: ' + ', '.join(words))
 
