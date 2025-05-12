@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Summarization with RAG and fine-tuned summarization models
+'''Summarization with RAG and fine-tuned summarization models'''
 
 import os
 import gc
@@ -71,14 +68,12 @@ for checkpoint, path in zip(checkpoints, local_paths):
     for i, text in tqdm(
         enumerate(original_texts),
         total=len(original_texts),
-        desc=f"Fine-tuned summarizing with {checkpoint}",
+        desc=f'Fine-tuned summarizing with {checkpoint}',
     ):
         print(f'Summarizing text nr.{i}')
         chunks = chunker.chunk_text(text)
 
-        tm = TopicModeler(
-            chunks=[Document(page_content=doc) for doc in chunks], num_topics=6
-        )
+        tm = TopicModeler(chunks=[Document(page_content=doc) for doc in chunks], num_topics=6)
         topic_words, _, topic_nums = tm.get_topics(1)
 
         for words, tid in zip(topic_words, topic_nums):
@@ -95,7 +90,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
         print(f'Inserted chunk: {chunks[0]}')
 
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
-        combined = " ".join(chunk_summaries)
+        combined = ' '.join(chunk_summaries)
 
         # Iterative reduction if over length
         max_rounds = 5
@@ -104,7 +99,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
             if tokens.shape[1] <= min(1024, pipeline.model_max_length):
                 break
             re_chunks = chunker.chunk_text(combined)
-            combined = " ".join(pipeline.summarize(rc) for rc in re_chunks)
+            combined = ' '.join(pipeline.summarize(rc) for rc in re_chunks)
 
         summaries.append(combined)
 
@@ -130,9 +125,9 @@ for checkpoint, path in zip(checkpoints, local_paths):
     all_metrics.append(metrics_df)
 
     # Print retriever usage stats for this model
-    print(f"\nRetriever usage frequency for {checkpoint}:")
+    print(f'\nRetriever usage frequency for {checkpoint}:')
     for term, count in retrieved_counter.most_common():
-        print(f"{term[:80]}... → {count} times")
+        print(f'{term[:80]}... → {count} times')
 
 # Combine all metrics
 final_df = pd.concat(all_metrics, ignore_index=True)
@@ -159,4 +154,4 @@ final_df.to_csv(
     doublequote=True,
     quotechar='"',
 )
-print(f"\nFine-tuned model with RAG evaluation complete. Metrics saved to {output_path}.")
+print(f'\nFine-tuned model with RAG evaluation complete. Metrics saved to {output_path}.')

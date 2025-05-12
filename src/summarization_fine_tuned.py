@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Summarization with fine-tuned summarization models
+'''Summarization with fine-tuned summarization models'''
 
 # In[ ]:
 
@@ -26,7 +23,7 @@ from utils import (
 
 # Load financial transcripts dataset
 transcripts_df = load_all_available_transcripts()
-print(f"Loaded transcripts: {transcripts_df.shape}")
+print(f'Loaded transcripts: {transcripts_df.shape}')
 
 # In[ ]:
 
@@ -56,13 +53,10 @@ all_metrics = []
 # Evaluate each fine-tuned model
 for checkpoint, path in zip(checkpoints, local_paths):
     model_config = ModelConfig(
-        model_name_or_path=checkpoint,
-        device='cuda' if torch.cuda.is_available() else 'cpu'
+        model_name_or_path=checkpoint, device='cuda' if torch.cuda.is_available() else 'cpu'
     )
     pipeline = SummarizationPipeline(
-        model_config=model_config,
-        logging_config=logging_config,
-        remote=False
+        model_config=model_config, logging_config=logging_config, remote=False
     )
     pipeline.load_from_local(path)
 
@@ -70,10 +64,10 @@ for checkpoint, path in zip(checkpoints, local_paths):
     chunker = TextChunker(tokenizer)
 
     summaries = []
-    for text in tqdm(original_texts, desc=f"Fine-tuned summarizing with {checkpoint}"):
+    for text in tqdm(original_texts, desc=f'Fine-tuned summarizing with {checkpoint}'):
         chunks = chunker.chunk_text(text)
         chunk_summaries = [pipeline.summarize(c) for c in chunks]
-        combined = " ".join(chunk_summaries)
+        combined = ' '.join(chunk_summaries)
 
         # Iteratively reduce summary length if it exceeds model limits
         max_rounds = 5
@@ -82,7 +76,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
             if tokens.shape[1] <= min(1024, pipeline.model_max_length):
                 break
             re_chunks = chunker.chunk_text(combined)
-            combined = " ".join(pipeline.summarize(rc) for rc in re_chunks)
+            combined = ' '.join(pipeline.summarize(rc) for rc in re_chunks)
 
         summaries.append(combined)
 
@@ -96,7 +90,7 @@ for checkpoint, path in zip(checkpoints, local_paths):
         originals=original_texts,
         summaries=summaries,
         model_name=checkpoint,
-        summarization_type='fine-tuned'
+        summarization_type='fine-tuned',
     )
 
     # Add metadata to metrics
@@ -118,20 +112,21 @@ output_path = 'summarization_evaluation_metrics.csv'
 if os.path.exists(output_path):
     existing_df = pd.read_csv(
         output_path,
-        sep='\t',             
+        sep='\t',
         quoting=1,
-        quotechar='"',        
-        escapechar='\\',      
-        doublequote=True,     
+        quotechar='"',
+        escapechar='\\',
+        doublequote=True,
         engine='python',
     )
     final_df = pd.concat([existing_df, final_df], ignore_index=True)
-final_df.to_csv(output_path, 
-    index=False, 
-    sep='\t', 
+final_df.to_csv(
+    output_path,
+    index=False,
+    sep='\t',
     quoting=1,
     escapechar='\\',
     doublequote=True,
     quotechar='"',
-    )
-print(f"Fine-tuned evaluation complete. Metrics saved to {output_path}.")
+)
+print(f'Fine-tuned evaluation complete. Metrics saved to {output_path}.')

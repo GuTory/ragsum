@@ -1,3 +1,5 @@
+'''Topic modeling Class based on Gensim package.'''
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 from langchain.schema import Document
@@ -5,20 +7,30 @@ from gensim import corpora, models
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 import nltk
-from langchain.schema import Document
 
 nltk.download('punkt')
 nltk.download('stopwords')
 
-from typing import Optional, List
 
 
 from utils import setup_logger
 
 logger = setup_logger(__name__)
 
+
 @dataclass
 class GensimTopicModeler:
+    '''
+    TopicModeler wraps Gensim for pre-chunked Document inputs.
+
+    Example:
+        from langchain.schema import Document
+
+        chunks = [Document(page_content='chunk1 text...'), Document(page_content='chunk2 text...')]
+        tm = GensimTopicModeler(chunks=chunks)
+        topics = tm.get_topics(num_topics=5)
+        tm.generate_wordcloud(0)
+    '''
     chunks: List[Document]
     num_topics: int = 10
     passes: int = 10
@@ -34,7 +46,7 @@ class GensimTopicModeler:
             corpus=self.corpus,
             id2word=self.dictionary,
             num_topics=self.num_topics,
-            passes=self.passes
+            passes=self.passes,
         )
         logger.info(f'Trained LDA model with {self.num_topics} topics.')
 
@@ -43,7 +55,9 @@ class GensimTopicModeler:
         stop_words = set(stopwords.words('english'))
         return [word for word in tokens if word.isalpha() and word not in stop_words]
 
-    def get_topics(self, num_topics: Optional[int] = None) -> Tuple[List[List[str]], List[List[float]], List[int]]:
+    def get_topics(
+        self, num_topics: Optional[int] = None
+    ) -> Tuple[List[List[str]], List[List[float]], List[int]]:
         """
         Retrieve topics from the trained LDA model.
 
@@ -75,7 +89,9 @@ class GensimTopicModeler:
         return topic_words, word_scores, topic_nums
 
     def print_topics(self, num_words: int = 10):
-        for idx, topic in self.lda_model.show_topics(num_topics=self.num_topics, num_words=num_words, formatted=False):
+        for idx, topic in self.lda_model.show_topics(
+            num_topics=self.num_topics, num_words=num_words, formatted=False
+        ):
             print(f"Topic #{idx}: {', '.join([word for word, _ in topic])}")
 
     def generate_wordcloud(self, topic_num: int):

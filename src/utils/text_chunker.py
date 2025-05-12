@@ -50,10 +50,11 @@ class TextChunker:
             'Initialized TextChunker with chunk_size=%d, chunk_overlap=%d, prefix="%s"',
             self._adjusted_chunk_size,
             self._chunk_overlap,
-            self.prefix
+            self.prefix,
         )
 
     def resize_chunks(self, size: int):
+        '''Allowing the Chunker to reparameterize chunk size.'''
         self._splitter = TokenTextSplitter.from_huggingface_tokenizer(
             tokenizer=self.tokenizer,
             chunk_size=size,

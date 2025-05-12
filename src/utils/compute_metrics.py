@@ -5,16 +5,16 @@ from rouge import Rouge
 import nltk
 
 from nltk.translate.bleu_score import sentence_bleu
-from nltk.translate.meteor_score import meteor_score
 from nltk.translate import meteor
 from nltk import word_tokenize
 import textstat
 import bert_score
 
-nltk.download('punkt')          # for word_tokenize & sent_tokenize
-nltk.download('wordnet')        # if you need WordNet in METEOR internals
+nltk.download('punkt')
+nltk.download('wordnet')
 nltk.download('omw-1.4')
 nltk.download('punkt_tab')
+
 
 def compute_metrics(originals: list, summaries: list, model_name, summarization_type):
     '''Metric computation for summaries'''
@@ -66,7 +66,7 @@ def compute_metrics(originals: list, summaries: list, model_name, summarization_
             'meteor': meteor_val,
             'compression_ratio': compression_ratio,
             'readability': readability,
-            'type': summarization_type
+            'type': summarization_type,
         }
         for m, scores in rouge_scores.items():
             row[f'{m}_r'] = scores['r']

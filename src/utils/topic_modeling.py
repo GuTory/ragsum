@@ -9,6 +9,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class TopicModeler:
     '''
@@ -37,8 +38,10 @@ class TopicModeler:
         '''
         self.model: Optional[Top2Vec] = None
         texts = [chunk.page_content for chunk in self.chunks]
-        logger.info(f'Training Top2Vec on {len(texts)} chunks '
-                    f'(speed={self.speed}, workers={self.workers})…')
+        logger.info(
+            f'Training Top2Vec on {len(texts)} chunks '
+            f'(speed={self.speed}, workers={self.workers})…'
+        )
         self.model = Top2Vec(texts, speed=self.speed, workers=self.workers)
         self.model.hierarchical_topic_reduction(num_topics=1)
 
@@ -51,8 +54,9 @@ class TopicModeler:
         self.num_topics = self.model.get_num_topics()
         return self.num_topics
 
-
-    def get_topics(self, num_topics: Optional[int]) -> Tuple[List[List[str]], List[List[float]], List[int]]:
+    def get_topics(
+        self, num_topics: Optional[int]
+    ) -> Tuple[List[List[str]], List[List[float]], List[int]]:
         '''
         Retrieve topics from the trained model.
 
@@ -63,7 +67,8 @@ class TopicModeler:
         '''
         if self.model is None:
             raise ValueError('Model has not been trained. Call fit() first.')
-        if not num_topics: num_topics = self.num_topics
+        if not num_topics:
+            num_topics = self.num_topics
         return self.model.get_topics(num_topics)
 
     def print_topics(self) -> None:
