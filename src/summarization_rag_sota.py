@@ -2,10 +2,10 @@
 
 # In[ ]:
 
-
 import os
 import gc
 from datetime import date
+from collections import Counter
 
 import torch
 from tqdm.notebook import tqdm
@@ -83,6 +83,8 @@ for checkpoint in checkpoints:
     chunker = TextChunker(tokenizer)
 
     summaries = []
+    retrieved_counter = Counter()
+    
     for i, text in tqdm(
         enumerate(original_texts),
         total=len(original_texts),
@@ -99,6 +101,10 @@ for checkpoint in checkpoints:
 
         topics_string = ' '.join(words)
         top_results, _ = retriever.search(topics_string, 3)
+        
+        # Update the counter with retrieved terms
+        retrieved_counter.update(top_results)
+        
         chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
 
         print(f'Inserted chunk: {chunks[0]}')
@@ -137,6 +143,12 @@ for checkpoint in checkpoints:
 
     all_metrics.append(metrics_df)
 
+    # Print retriever usage stats for this model
+    print(f'\nRetriever usage frequency for {checkpoint}:')
+    for term, count in retrieved_counter.most_common():
+        print(f'{term[:80]}... → {count} times')
+
+# Combine all metrics
 final_df = pd.concat(all_metrics, ignore_index=True)
 
 
