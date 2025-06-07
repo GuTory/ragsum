@@ -84,7 +84,7 @@ for checkpoint in checkpoints:
 
     summaries = []
     retrieved_counter = Counter()
-    
+
     for i, text in tqdm(
         enumerate(original_texts),
         total=len(original_texts),
@@ -101,10 +101,10 @@ for checkpoint in checkpoints:
 
         topics_string = ' '.join(words)
         top_results, _ = retriever.search(topics_string, 3)
-        
+
         # Update the counter with retrieved terms
         retrieved_counter.update(top_results)
-        
+
         chunks.insert(0, 'context: ' + ', '.join(top_results) + '. Text to summarize: ')
 
         print(f'Inserted chunk: {chunks[0]}')
